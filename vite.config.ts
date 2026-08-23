@@ -44,6 +44,11 @@ export default defineConfig({
             './src/repair/ToolSystem.ts',
             './src/repair/RepairBay.ts',
           ],
+          'workers': [
+            './src/workers/terrainWorker.ts',
+            './src/workers/houseWorker.ts',
+            './src/workers/physicsWorker.ts',
+          ],
           'systems': [
             './src/systems/Narrator.ts',
             './src/systems/SceneManager.ts',
