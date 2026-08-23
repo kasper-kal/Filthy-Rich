@@ -524,4 +524,8 @@ export class HouseGenerator {
   getExteriorData(houseId: string): GeneratedExterior | undefined {
     return this.exteriorData.get(houseId)
   }
+
+  getLoadedHouseCount(): number {
+    return this.houseMeshes.size
+  }
 }

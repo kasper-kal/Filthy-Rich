@@ -5,6 +5,7 @@ import { ChunkManager } from './ChunkManager.js'
 import { TerrainSystem } from './TerrainSystem.js'
 import { RoadNetwork } from './RoadNetwork.js'
 import { AssetStreamer } from './AssetStreamer.js'
+import { NavMesh, AITrafficManager, AIVehicle } from './NavMesh.js'
 
 export class WorldStreamer {
   private sceneManager: SceneManager
@@ -14,6 +15,8 @@ export class WorldStreamer {
   private roadNetwork: RoadNetwork
   private houseGenerator: HouseGenerator
   private assetStreamer: AssetStreamer
+  private navMesh: NavMesh
+  private aiTrafficManager: AITrafficManager
 
   private loadedHouses: Map<string, HouseInstance> = new Map()
   private worldSeed: number
@@ -50,6 +53,8 @@ export class WorldStreamer {
     this.roadNetwork = new RoadNetwork(this.sceneManager, this.worldSeed, this.worldSize)
     this.houseGenerator = new HouseGenerator(this.sceneManager, this.worldSeed)
     this.assetStreamer = new AssetStreamer()
+    this.navMesh = new NavMesh(this.roadNetwork)
+    this.aiTrafficManager = new AITrafficManager(this.navMesh)
   }
 
   async init(): Promise<void> {
@@ -61,6 +66,9 @@ export class WorldStreamer {
 
     // Initialize road network
     await this.roadNetwork.init()
+
+    // Build navigation mesh from road network
+    this.navMesh.build()
 
     // Generate initial chunks around origin
     this.chunkManager.generateInitialChunks()
@@ -84,6 +92,9 @@ export class WorldStreamer {
     // Update terrain/road LOD
     this.terrainSystem.updateLOD(cameraPosition)
     this.roadNetwork.updateLOD(cameraPosition)
+
+    // Update AI traffic
+    this.aiTrafficManager.update(deltaTime, cameraPosition)
   }
 
   private streamHouses(cameraPosition: THREE.Vector3): void {
@@ -300,6 +311,8 @@ export class WorldStreamer {
   getRoadNetwork(): RoadNetwork { return this.roadNetwork }
   getHouseGenerator(): HouseGenerator { return this.houseGenerator }
   getAssetStreamer(): AssetStreamer { return this.assetStreamer }
+  getNavMesh(): NavMesh { return this.navMesh }
+  getAITrafficManager(): AITrafficManager { return this.aiTrafficManager }
 
   serialize(): any {
     return {

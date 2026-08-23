@@ -167,6 +167,10 @@ export class ChunkManager {
     return this.loadedChunks.has(chunkId)
   }
 
+  getLoadedChunkCount(): number {
+    return this.loadedChunks.size
+  }
+
   getChunkBounds(chunkId: string): { min: THREE.Vector3; max: THREE.Vector3 } | null {
     const chunk = this.chunks.get(chunkId)
     return chunk?.bounds || null

@@ -12,6 +12,7 @@ import { HOUSE_LAYOUT } from '../systems/HouseLayout.js'
 import { audioManager } from '../systems/AudioManager.js'
 import { DiegeticHUD } from '../systems/DiegeticHUD.js'
 import { PostProcessing } from '../systems/PostProcessing.js'
+import { MemoryProfiler, memoryProfiler } from '../systems/MemoryProfiler.js'
 import { WorldStreamer } from '../world/WorldStreamer.js'
 import { Vehicle, VehicleType } from '../vehicle/Vehicle.js'
 import { VehicleSpecs, VehicleSpecsData } from '../vehicle/VehicleSpecs.js'
@@ -58,6 +59,11 @@ export class Game {
 
   private running = false
   private lastTime = 0
+
+  // Memory profiling
+  private memoryProfiler!: MemoryProfiler
+  private profileTimer = 0
+  private profileInterval = 5000 // Log every 5 seconds
 
   // State machine
   private currentState: GameState = 'ON_FOOT'
@@ -168,6 +174,28 @@ export class Game {
     this.setupPostProcessing()
 
     this.narrator.onLine = (line: string, category: string) => this.hud.showPrompt(line)
+
+    // Initialize memory profiler
+    this.memoryProfiler = memoryProfiler
+    this.memoryProfiler.setSystemReferences({
+      assetStreamer: this.worldStreamer.getAssetStreamer(),
+      worldStreamer: this.worldStreamer,
+    })
+    this.memoryProfiler.setBudgets({
+      jsHeapMB: 300,
+      texturesMB: 500,
+      totalMB: 1200,
+    })
+    this.memoryProfiler.start(1000) // Sample every second
+
+    this.memoryProfiler.onBudgetExceeded = (budget, current, limit) => {
+      console.warn(`[MemoryProfiler] Budget exceeded: ${budget} = ${current.toFixed(1)}MB / ${limit}MB`)
+      this.hud.showPrompt?.(`Memory budget exceeded: ${budget}`)
+    }
+
+    this.memoryProfiler.onMemoryLeakDetected = (details) => {
+      console.warn(`[MemoryProfiler] Potential leak: ${details}`)
+    }
 
     this.cleaningSystem.onProgressChange = (progress: number) => {
       this.hud.updateProgress(progress / 100)
@@ -519,6 +547,13 @@ export class Game {
     this.narrator.update(delta)
 
     this.postProcessing.render(delta)
+
+    // Memory profiling
+    this.profileTimer += delta * 1000
+    if (this.profileTimer >= this.profileInterval) {
+      this.memoryProfiler.sample()
+      this.profileTimer = 0
+    }
 
     requestAnimationFrame(this.animate)
   }
