@@ -1,6 +1,6 @@
 # Session Brief - Filthy Rich Open World Transformation
 
-**Last Updated:** 2026-08-23 15:30
+**Last Updated:** 2026-08-23 16:45
 **Current Phase:** Phase 5 (Integration & Polish) - Save System Overhaul COMPLETE
 **Branch:** main
 
@@ -26,6 +26,7 @@
 ## Change Record (Newest First)
 
 1. **2026-08-23** - Fixed all TypeScript errors across codebase:
+   - Fixed `TextureCompression.ts`: Changed `ErrorEvent` to `unknown` in error callbacks for `loadKTX2` and `loadFallback` methods (Three.js r165 type compatibility)
    - Fixed `HouseGenerator.ts`: Exported `HouseInstance` interface, fixed `mergeGeometries` import, scoped `roofHeight`, fixed `createWheelieBin` return type, fixed `setLOD` LOD check
    - Fixed `ImposterSystem.ts`: Added `mergeGeometries` import, fixed `templateId` → `template`, fixed return types for `addHouseImposter`/`addChunkImposter`
    - Fixed `RoadNetwork.ts`: Removed unreachable 'motorway' comparisons in ternary
@@ -39,9 +40,9 @@
    - Updated `Game.ts` initialization order to pass all 14 dependencies to SaveSystem
    - Added Vite `manualChunks` for code splitting (all chunks under 600KB)
 
-2. **2026-08-23** - Created PHASES.md master roadmap with all phases and completion status
+3. **2026-08-23** - Created PHASES.md master roadmap with all phases and completion status
 
-3. **2026-08-23** - Created session-brief.md for live project state tracking
+4. **2026-08-23** - Created session-brief.md for live project state tracking
 
 ---
 

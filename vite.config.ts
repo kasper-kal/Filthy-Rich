@@ -49,6 +49,9 @@ export default defineConfig({
             './src/workers/houseWorker.ts',
             './src/workers/physicsWorker.ts',
           ],
+          'textures': [
+            './src/systems/TextureCompression.ts',
+          ],
           'systems': [
             './src/systems/Narrator.ts',
             './src/systems/SceneManager.ts',
