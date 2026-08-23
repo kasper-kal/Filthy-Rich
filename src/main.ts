@@ -1,4 +1,6 @@
-import { Game } from './game/Game.js'
+import { Game } from './game/Game.js';
 
-const game = new Game()
-game.init().then(() => game.start())
+const game = new Game();
+game.init().then(() => {
+  game.start();
+});

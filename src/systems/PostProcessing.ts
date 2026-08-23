@@ -1,11 +1,11 @@
-import * as THREE from 'three'
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
-import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js'
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
-import { FilmPass } from 'three/examples/jsm/postprocessing/FilmPass.js'
+import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { FilmPass } from 'three/examples/jsm/postprocessing/FilmPass.js';
 
 const FXAAShader = {
   uniforms: {
@@ -65,124 +65,124 @@ const FXAAShader = {
       }
     }
   `,
-}
+};
 
 export class PostProcessing {
-  private composer!: EffectComposer
-  private bloomPass!: UnrealBloomPass
-  private ssaoPass!: SSAOPass
-  private outputPass!: OutputPass
-  private fxaaPass!: ShaderPass
-  private filmPass!: FilmPass
+  private composer!: EffectComposer;
+  private bloomPass!: UnrealBloomPass;
+  private ssaoPass!: SSAOPass;
+  private outputPass!: OutputPass;
+  private fxaaPass!: ShaderPass;
+  private filmPass!: FilmPass;
 
   private enabled = {
     bloom: true,
     ssao: true,
     fxaa: true,
     film: false,
-  }
+  };
 
   constructor(
     private renderer: THREE.WebGLRenderer,
     private scene: THREE.Scene,
     private camera: THREE.PerspectiveCamera
   ) {
-    this.init()
+    this.init();
   }
 
   private init(): void {
-    this.composer = new EffectComposer(this.renderer)
-    this.composer.addPass(new RenderPass(this.scene, this.camera))
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
 
     // SSAO - Screen Space Ambient Occlusion
-    this.ssaoPass = new SSAOPass(this.scene, this.camera, window.innerWidth, window.innerHeight)
-    this.ssaoPass.kernelRadius = 8
-    this.ssaoPass.minDistance = 0.005
-    this.ssaoPass.maxDistance = 0.1
-    this.ssaoPass.output = SSAOPass.OUTPUT.Default
-    this.composer.addPass(this.ssaoPass)
+    this.ssaoPass = new SSAOPass(this.scene, this.camera, window.innerWidth, window.innerHeight);
+    this.ssaoPass.kernelRadius = 8;
+    this.ssaoPass.minDistance = 0.005;
+    this.ssaoPass.maxDistance = 0.1;
+    this.ssaoPass.output = SSAOPass.OUTPUT.Default;
+    this.composer.addPass(this.ssaoPass);
 
     // Bloom for emissive materials and bright highlights
     this.bloomPass = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
-      0.6,   // strength
-      0.4,   // radius
-      0.85   // threshold
-    )
-    this.composer.addPass(this.bloomPass)
+      0.6, // strength
+      0.4, // radius
+      0.85 // threshold
+    );
+    this.composer.addPass(this.bloomPass);
 
     // FXAA for anti-aliasing
-    this.fxaaPass = new ShaderPass(FXAAShader)
-    this.fxaaPass.material.uniforms.resolution.value.x = 1 / window.innerWidth
-    this.fxaaPass.material.uniforms.resolution.value.y = 1 / window.innerHeight
-    this.composer.addPass(this.fxaaPass)
+    this.fxaaPass = new ShaderPass(FXAAShader);
+    this.fxaaPass.material.uniforms.resolution.value.x = 1 / window.innerWidth;
+    this.fxaaPass.material.uniforms.resolution.value.y = 1 / window.innerHeight;
+    this.composer.addPass(this.fxaaPass);
 
     // Film grain (subtle) - FilmPass in newer three.js takes (intensity, grayscale)
-    this.filmPass = new FilmPass(0.35, false)
-    this.composer.addPass(this.filmPass)
+    this.filmPass = new FilmPass(0.35, false);
+    this.composer.addPass(this.filmPass);
 
     // Output pass with tone mapping
-    this.outputPass = new OutputPass()
-    this.composer.addPass(this.outputPass)
+    this.outputPass = new OutputPass();
+    this.composer.addPass(this.outputPass);
   }
 
   render(delta: number): void {
-    this.composer.render(delta)
+    this.composer.render(delta);
   }
 
   onResize(width: number, height: number): void {
-    this.composer.setSize(width, height)
-    this.ssaoPass.setSize(width, height)
-    this.bloomPass.setSize(width, height)
-    this.fxaaPass.material.uniforms.resolution.value.x = 1 / width
-    this.fxaaPass.material.uniforms.resolution.value.y = 1 / height
+    this.composer.setSize(width, height);
+    this.ssaoPass.setSize(width, height);
+    this.bloomPass.setSize(width, height);
+    this.fxaaPass.material.uniforms.resolution.value.x = 1 / width;
+    this.fxaaPass.material.uniforms.resolution.value.y = 1 / height;
   }
 
   setBloomEnabled(enabled: boolean): void {
-    this.enabled.bloom = enabled
-    this.bloomPass.enabled = enabled
+    this.enabled.bloom = enabled;
+    this.bloomPass.enabled = enabled;
   }
 
   setSSAOEnabled(enabled: boolean): void {
-    this.enabled.ssao = enabled
-    this.ssaoPass.enabled = enabled
+    this.enabled.ssao = enabled;
+    this.ssaoPass.enabled = enabled;
   }
 
   setFXAAEnabled(enabled: boolean): void {
-    this.enabled.fxaa = enabled
-    this.fxaaPass.enabled = enabled
+    this.enabled.fxaa = enabled;
+    this.fxaaPass.enabled = enabled;
   }
 
   setFilmEnabled(enabled: boolean): void {
-    this.enabled.film = enabled
-    this.filmPass.enabled = enabled
+    this.enabled.film = enabled;
+    this.filmPass.enabled = enabled;
   }
 
   setBloomStrength(strength: number): void {
-    this.bloomPass.strength = strength
+    this.bloomPass.strength = strength;
   }
 
   setBloomThreshold(threshold: number): void {
-    this.bloomPass.threshold = threshold
+    this.bloomPass.threshold = threshold;
   }
 
   setBloomRadius(radius: number): void {
-    this.bloomPass.radius = radius
+    this.bloomPass.radius = radius;
   }
 
   setSSAOKernelRadius(radius: number): void {
-    this.ssaoPass.kernelRadius = radius
+    this.ssaoPass.kernelRadius = radius;
   }
 
   setSSAOMinDistance(dist: number): void {
-    this.ssaoPass.minDistance = dist
+    this.ssaoPass.minDistance = dist;
   }
 
   setSSAOMaxDistance(dist: number): void {
-    this.ssaoPass.maxDistance = dist
+    this.ssaoPass.maxDistance = dist;
   }
 
   getComposer(): EffectComposer {
-    return this.composer
+    return this.composer;
   }
 }

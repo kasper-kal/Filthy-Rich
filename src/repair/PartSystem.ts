@@ -1,6 +1,11 @@
-import * as THREE from 'three'
-import { Part, PartCondition, PartCatalogue, ToolRequirement } from '../vehicle/RepairSystem.js'
-import { SubsystemName } from '../vehicle/DamageModel.js'
+import * as THREE from 'three';
+import type {
+  Part,
+  PartCondition,
+  PartCatalogue,
+  ToolRequirement,
+} from '../vehicle/RepairSystem.js';
+import type { SubsystemName } from '../vehicle/DamageModel.js';
 
 /**
  * PartSystem - Parts management, inventory, pricing, compatibility, wear tracking
@@ -12,18 +17,18 @@ import { SubsystemName } from '../vehicle/DamageModel.js'
 // ============================================
 
 export interface InventoryPart {
-  part: Part
-  quantity: number
-  purchasePrice: number
-  purchaseDate: number
-  location: 'garage' | 'van' | 'mobile_toolbox'
+  part: Part;
+  quantity: number;
+  purchasePrice: number;
+  purchaseDate: number;
+  location: 'garage' | 'van' | 'mobile_toolbox';
 }
 
 export interface PartsInventory {
-  parts: Map<string, InventoryPart>
-  maxWeight: number // kg
-  currentWeight: number
-  storageLocations: Map<string, string[]> // location -> part IDs
+  parts: Map<string, InventoryPart>;
+  maxWeight: number; // kg
+  currentWeight: number;
+  storageLocations: Map<string, string[]>; // location -> part IDs
 }
 
 const DEFAULT_INVENTORY: PartsInventory = {
@@ -33,64 +38,64 @@ const DEFAULT_INVENTORY: PartsInventory = {
   storageLocations: new Map([
     ['garage', []],
     ['van', []],
-    ['mobile_toolbox', []]
-  ])
-}
+    ['mobile_toolbox', []],
+  ]),
+};
 
 // ============================================
 // PARTS MANAGER
 // ============================================
 
 export class PartsManager {
-  private catalogue: PartCatalogue
-  private inventory: PartsInventory
-  private money = 0
+  private catalogue: PartCatalogue;
+  private inventory: PartsInventory;
+  private money = 0;
 
   // Price multipliers
   private conditionPriceMultipliers: Record<PartCondition, number> = {
     new: 1.0,
     refurbished: 0.65,
     used: 0.4,
-    scrapyard: 0.15
-  }
+    scrapyard: 0.15,
+  };
 
   private conditionReliabilityMultipliers: Record<PartCondition, number> = {
     new: 1.0,
     refurbished: 0.85,
     used: 0.6,
-    scrapyard: 0.3
-  }
+    scrapyard: 0.3,
+  };
 
   // Callbacks
-  onInventoryChange?: () => void
-  onMoneyChange?: (money: number) => void
+  onInventoryChange?: () => void;
+  onMoneyChange?: (money: number) => void;
 
   constructor(catalogue: PartCatalogue) {
-    this.catalogue = catalogue
-    this.inventory = { ...DEFAULT_INVENTORY }
+    this.catalogue = catalogue;
+    this.inventory = { ...DEFAULT_INVENTORY };
     // Initialize storage locations
     this.inventory.storageLocations = new Map([
       ['garage', []],
       ['van', []],
-      ['mobile_toolbox', []]
-    ])
+      ['mobile_toolbox', []],
+    ]);
   }
 
   /**
    * Set player money
    */
   setMoney(amount: number): void {
-    this.money = Math.max(0, amount)
-    this.onMoneyChange?.(this.money)
+    this.money = Math.max(0, amount);
+    this.onMoneyChange?.(this.money);
   }
 
   getMoney(): number {
-    return this.money
+    return this.money;
   }
 
   addMoney(amount: number): void {
-    this.money = Math.max(0, this.money + amount)
-    this.onMoneyChange?.(this.money)
+    this.money = Math.max(0, this.money + amount);
+    this.onMoneyChange?.(this.money);
   }
 
   /**
@@ -102,26 +107,29 @@ export class PartsManager {
     quantity = 1,
     destination: 'garage' | 'van' | 'mobile_toolbox' = 'garage'
   ): InventoryPart | null {
-    const cataloguePart = this.catalogue.getPart(partId)
-    if (!cataloguePart) return null
+    const cataloguePart = this.catalogue.getPart(partId);
+    if (!cataloguePart) return null;
 
     // Check stock
-    if (condition === 'new' && cataloguePart.stock < quantity) return null
+    if (condition === 'new' && cataloguePart.stock < quantity) return null;
 
-    const price = Math.round(cataloguePart.priceNew * this.conditionPriceMultipliers[condition] * quantity)
-    if (this.money < price) return null
+    const price = Math.round(
+      cataloguePart.priceNew * this.conditionPriceMultipliers[condition] * quantity
+    );
+    if (this.money < price) return null;
 
     // Check weight capacity
-    const weightPerUnit = this.estimatePartWeight(cataloguePart)
-    if (this.inventory.currentWeight + weightPerUnit * quantity > this.inventory.maxWeight) return null
+    const weightPerUnit = this.estimatePartWeight(cataloguePart);
+    if (this.inventory.currentWeight + weightPerUnit * quantity > this.inventory.maxWeight)
+      return null;
 
     // Deduct money
-    this.money -= price
-    this.onMoneyChange?.(this.money)
+    this.money -= price;
+    this.onMoneyChange?.(this.money);
 
     // Reduce catalogue stock for new parts
     if (condition === 'new') {
-      cataloguePart.stock -= quantity
+      cataloguePart.stock -= quantity;
     }
 
     // Add to inventory
@@ -130,21 +138,21 @@ export class PartsManager {
       quantity,
       purchasePrice: price,
       purchaseDate: Date.now(),
-      location: destination
-    }
+      location: destination,
+    };
 
-    const existing = this.inventory.parts.get(partId)
+    const existing = this.inventory.parts.get(partId);
     if (existing) {
-      existing.quantity += quantity
+      existing.quantity += quantity;
     } else {
-      this.inventory.parts.set(partId, invPart)
+      this.inventory.parts.set(partId, invPart);
     }
 
-    this.inventory.currentWeight += weightPerUnit * quantity
-    this.inventory.storageLocations.get(destination)?.push(partId)
+    this.inventory.currentWeight += weightPerUnit * quantity;
+    this.inventory.storageLocations.get(destination)?.push(partId);
 
-    this.onInventoryChange?.()
-    return invPart
+    this.onInventoryChange?.();
+    return invPart;
   }
 
   /**
@@ -171,221 +179,236 @@ export class PartsManager {
       electrical: 3,
       exhaust: 8,
       transmission_mounts: 2,
-      body_structure: 12
-    }
-    return weights[part.category] || 2
+      body_structure: 12,
+    };
+    return weights[part.category] || 2;
   }
 
   /**
    * Sell part back (for fraction of price)
    */
   sellPart(partId: string, quantity = 1): number {
-    const invPart = this.inventory.parts.get(partId)
-    if (!invPart || invPart.quantity < quantity) return 0
+    const invPart = this.inventory.parts.get(partId);
+    if (!invPart || invPart.quantity < quantity) return 0;
 
-    const sellPrice = Math.round(invPart.part.priceNew * this.conditionPriceMultipliers[invPart.part.condition] * 0.4 * quantity)
-    this.money += sellPrice
-    this.onMoneyChange?.(this.money)
+    const sellPrice = Math.round(
+      invPart.part.priceNew *
+        this.conditionPriceMultipliers[invPart.part.condition] *
+        0.4 *
+        quantity
+    );
+    this.money += sellPrice;
+    this.onMoneyChange?.(this.money);
 
-    invPart.quantity -= quantity
-    this.inventory.currentWeight -= this.estimatePartWeight(invPart.part) * quantity
+    invPart.quantity -= quantity;
+    this.inventory.currentWeight -= this.estimatePartWeight(invPart.part) * quantity;
 
     if (invPart.quantity === 0) {
-      this.inventory.parts.delete(partId)
+      this.inventory.parts.delete(partId);
       // Remove from storage locations
       for (const [loc, parts] of this.inventory.storageLocations) {
-        const idx = parts.indexOf(partId)
-        if (idx >= 0) parts.splice(idx, 1)
+        const idx = parts.indexOf(partId);
+        if (idx >= 0) parts.splice(idx, 1);
       }
     }
 
-    this.onInventoryChange?.()
-    return sellPrice
+    this.onInventoryChange?.();
+    return sellPrice;
   }
 
   /**
    * Use part for repair (removes from inventory)
    */
   usePart(partId: string): InventoryPart | null {
-    const invPart = this.inventory.parts.get(partId)
-    if (!invPart || invPart.quantity <= 0) return null
+    const invPart = this.inventory.parts.get(partId);
+    if (!invPart || invPart.quantity <= 0) return null;
 
-    invPart.quantity--
-    this.inventory.currentWeight -= this.estimatePartWeight(invPart.part)
+    invPart.quantity--;
+    this.inventory.currentWeight -= this.estimatePartWeight(invPart.part);
 
     if (invPart.quantity === 0) {
-      this.inventory.parts.delete(partId)
+      this.inventory.parts.delete(partId);
       for (const [loc, parts] of this.inventory.storageLocations) {
-        const idx = parts.indexOf(partId)
-        if (idx >= 0) parts.splice(idx, 1)
+        const idx = parts.indexOf(partId);
+        if (idx >= 0) parts.splice(idx, 1);
       }
     }
 
-    this.onInventoryChange?.()
-    return invPart
+    this.onInventoryChange?.();
+    return invPart;
   }
 
   /**
    * Move part between locations
    */
   movePart(partId: string, from: string, to: string): boolean {
-    const fromParts = this.inventory.storageLocations.get(from)
-    const toParts = this.inventory.storageLocations.get(to)
-    if (!fromParts || !toParts) return false
+    const fromParts = this.inventory.storageLocations.get(from);
+    const toParts = this.inventory.storageLocations.get(to);
+    if (!fromParts || !toParts) return false;
 
-    const idx = fromParts.indexOf(partId)
-    if (idx < 0) return false
+    const idx = fromParts.indexOf(partId);
+    if (idx < 0) return false;
 
-    fromParts.splice(idx, 1)
-    toParts.push(partId)
+    fromParts.splice(idx, 1);
+    toParts.push(partId);
 
-    const invPart = this.inventory.parts.get(partId)
+    const invPart = this.inventory.parts.get(partId);
     if (invPart) {
-      invPart.location = to as any
+      invPart.location = to as any;
     }
 
-    this.onInventoryChange?.()
-    return true
+    this.onInventoryChange?.();
+    return true;
   }
 
   /**
    * Get parts in inventory for a subsystem
    */
   getPartsForSubsystem(subsystem: string): InventoryPart[] {
-    const results: InventoryPart[] = []
+    const results: InventoryPart[] = [];
     for (const invPart of this.inventory.parts.values()) {
       if (invPart.part.category === subsystem) {
-        results.push(invPart)
+        results.push(invPart);
       }
     }
-    return results
+    return results;
   }
 
   /**
    * Get all inventory parts
    */
   getAllInventory(): InventoryPart[] {
-    return Array.from(this.inventory.parts.values())
+    return Array.from(this.inventory.parts.values());
   }
 
   /**
    * Get parts at specific location
    */
   getPartsAtLocation(location: string): InventoryPart[] {
-    const partIds = this.inventory.storageLocations.get(location) || []
-    return partIds.map(id => this.inventory.parts.get(id)).filter(Boolean) as InventoryPart[]
+    const partIds = this.inventory.storageLocations.get(location) || [];
+    return partIds.map(id => this.inventory.parts.get(id)).filter(Boolean) as InventoryPart[];
   }
 
   /**
    * Check if part is compatible with vehicle
    */
   isCompatible(partId: string, vehicleSpecsId: string): boolean {
-    const part = this.catalogue.getPart(partId)
-    if (!part) return false
-    return part.compatibleWith.includes('*') || part.compatibleWith.includes(vehicleSpecsId)
+    const part = this.catalogue.getPart(partId);
+    if (!part) return false;
+    return part.compatibleWith.includes('*') || part.compatibleWith.includes(vehicleSpecsId);
   }
 
   /**
    * Get part price for given condition
    */
   getPartPrice(partId: string, condition: PartCondition): number {
-    const part = this.catalogue.getPart(partId)
-    if (!part) return 0
-    return Math.round(part.priceNew * this.conditionPriceMultipliers[condition])
+    const part = this.catalogue.getPart(partId);
+    if (!part) return 0;
+    return Math.round(part.priceNew * this.conditionPriceMultipliers[condition]);
   }
 
   /**
    * Get part reliability factor for condition
    */
   getPartReliability(partId: string, condition: PartCondition): number {
-    const part = this.catalogue.getPart(partId)
-    if (!part) return 0
-    return this.conditionReliabilityMultipliers[condition]
+    const part = this.catalogue.getPart(partId);
+    if (!part) return 0;
+    return this.conditionReliabilityMultipliers[condition];
   }
 
   /**
    * Get available scrapyard parts (random daily stock)
    */
-  getScrapyardStock(subsystem?: SubsystemName): { part: Part; condition: 'scrapyard'; price: number; reliability: number }[] {
-    const results: { part: Part; condition: 'scrapyard'; price: number; reliability: number }[] = []
+  getScrapyardStock(
+    subsystem?: SubsystemName
+  ): { part: Part; condition: 'scrapyard'; price: number; reliability: number }[] {
+    const results: { part: Part; condition: 'scrapyard'; price: number; reliability: number }[] =
+      [];
 
     for (const part of this.catalogue.getAllParts()) {
-      if (subsystem && part.category !== subsystem) continue
-      if (Math.random() < 0.3) { // 30% chance each part is in scrapyard today
+      if (subsystem && part.category !== subsystem) continue;
+      if (Math.random() < 0.3) {
+        // 30% chance each part is in scrapyard today
         results.push({
           part,
           condition: 'scrapyard',
           price: Math.round(part.priceNew * this.conditionPriceMultipliers.scrapyard),
-          reliability: this.conditionReliabilityMultipliers.scrapyard
-        })
+          reliability: this.conditionReliabilityMultipliers.scrapyard,
+        });
       }
     }
 
-    return results
+    return results;
   }
 
   /**
    * Search parts by name/category
    */
   searchParts(query: string): Part[] {
-    const lowerQuery = query.toLowerCase()
-    return this.catalogue.getAllParts().filter(p =>
-      p.name.toLowerCase().includes(lowerQuery) ||
-      p.category.toLowerCase().includes(lowerQuery) ||
-      p.brand.toLowerCase().includes(lowerQuery)
-    )
+    const lowerQuery = query.toLowerCase();
+    return this.catalogue
+      .getAllParts()
+      .filter(
+        p =>
+          p.name.toLowerCase().includes(lowerQuery) ||
+          p.category.toLowerCase().includes(lowerQuery) ||
+          p.brand.toLowerCase().includes(lowerQuery)
+      );
   }
 
   /**
    * Get required tools for part installation
    */
   getRequiredTools(partId: string): ToolRequirement[] {
-    const part = this.catalogue.getPart(partId)
-    return part?.requiresTools || []
+    const part = this.catalogue.getPart(partId);
+    return part?.requiresTools || [];
   }
 
   /**
    * Get condition price multiplier
    */
   getConditionPriceMultiplier(condition: PartCondition): number {
-    return this.conditionPriceMultipliers[condition]
+    return this.conditionPriceMultipliers[condition];
   }
 
   /**
    * Get condition reliability multiplier
    */
   getConditionReliabilityMultiplier(condition: PartCondition): number {
-    return this.conditionReliabilityMultipliers[condition]
+    return this.conditionReliabilityMultipliers[condition];
   }
 
   /**
    * Check if player has all required tools
    */
-  checkToolsAvailable(partId: string, ownedTools: string[]): { hasAll: boolean; missing: ToolRequirement[] } {
-    const required = this.getRequiredTools(partId)
-    const missing = required.filter(req => !ownedTools.includes(req.tool))
-    return { hasAll: missing.length === 0, missing }
+  checkToolsAvailable(
+    partId: string,
+    ownedTools: string[]
+  ): { hasAll: boolean; missing: ToolRequirement[] } {
+    const required = this.getRequiredTools(partId);
+    const missing = required.filter(req => !ownedTools.includes(req.tool));
+    return { hasAll: missing.length === 0, missing };
   }
 
   /**
    * Get inventory weight
    */
   getWeight(): { current: number; max: number } {
-    return { current: this.inventory.currentWeight, max: this.inventory.maxWeight }
+    return { current: this.inventory.currentWeight, max: this.inventory.maxWeight };
   }
 
   /**
    * Upgrade storage capacity
    */
   upgradeStorage(newMaxWeight: number): boolean {
-    const cost = (newMaxWeight - this.inventory.maxWeight) * 50 // £50 per kg
-    if (this.money < cost) return false
+    const cost = (newMaxWeight - this.inventory.maxWeight) * 50; // £50 per kg
+    if (this.money < cost) return false;
 
-    this.money -= cost
-    this.inventory.maxWeight = newMaxWeight
-    this.onMoneyChange?.(this.money)
-    this.onInventoryChange?.()
-    return true
+    this.money -= cost;
+    this.inventory.maxWeight = newMaxWeight;
+    this.onMoneyChange?.(this.money);
+    this.onInventoryChange?.();
+    return true;
   }
 
   serialize(): any {
@@ -395,21 +418,25 @@ export class PartsManager {
         parts: Array.from(this.inventory.parts.entries()),
         maxWeight: this.inventory.maxWeight,
         currentWeight: this.inventory.currentWeight,
-        storageLocations: Array.from(this.inventory.storageLocations.entries())
-      }
-    }
+        storageLocations: Array.from(this.inventory.storageLocations.entries()),
+      },
+    };
   }
 
   deserialize(data: any): void {
-    this.money = data.money || 0
-    this.inventory.parts = new Map(data.inventory?.parts || [])
-    this.inventory.maxWeight = data.inventory?.maxWeight || 50
-    this.inventory.currentWeight = data.inventory?.currentWeight || 0
-    this.inventory.storageLocations = new Map(data.inventory?.storageLocations || [
-      ['garage', []], ['van', []], ['mobile_toolbox', []]
-    ])
-    this.onMoneyChange?.(this.money)
-    this.onInventoryChange?.()
+    this.money = data.money || 0;
+    this.inventory.parts = new Map(data.inventory?.parts || []);
+    this.inventory.maxWeight = data.inventory?.maxWeight || 50;
+    this.inventory.currentWeight = data.inventory?.currentWeight || 0;
+    this.inventory.storageLocations = new Map(
+      data.inventory?.storageLocations || [
+        ['garage', []],
+        ['van', []],
+        ['mobile_toolbox', []],
+      ]
+    );
+    this.onMoneyChange?.(this.money);
+    this.onInventoryChange?.();
   }
 }
 
@@ -418,77 +445,77 @@ export class PartsManager {
 // ============================================
 
 export interface ShopItem {
-  part: Part
-  condition: PartCondition
-  price: number
-  reliability: number
-  inStock: boolean
-  stockCount: number
-  isDiscounted: boolean
-  discountPercent: number
+  part: Part;
+  condition: PartCondition;
+  price: number;
+  reliability: number;
+  inStock: boolean;
+  stockCount: number;
+  isDiscounted: boolean;
+  discountPercent: number;
 }
 
 export class PartsShop {
-  private partsManager: PartsManager
-  private dailyDeals: Map<string, { discount: number; expires: number }> = new Map()
+  private partsManager: PartsManager;
+  private dailyDeals = new Map<string, { discount: number; expires: number }>();
 
   constructor(partsManager: PartsManager) {
-    this.partsManager = partsManager
-    this.generateDailyDeals()
+    this.partsManager = partsManager;
+    this.generateDailyDeals();
   }
 
   private generateDailyDeals(): void {
     // Generate 3-5 daily deals
-    const allParts = this.partsManager.getAllInventory()
-    const count = 3 + Math.floor(Math.random() * 3)
+    const allParts = this.partsManager.getAllInventory();
+    const count = 3 + Math.floor(Math.random() * 3);
 
     for (let i = 0; i < count && i < allParts.length; i++) {
-      const part = allParts[Math.floor(Math.random() * allParts.length)].part
+      const part = allParts[Math.floor(Math.random() * allParts.length)].part;
       this.dailyDeals.set(part.id, {
         discount: 0.1 + Math.random() * 0.2, // 10-30% off
-        expires: Date.now() + 24 * 60 * 60 * 1000
-      })
+        expires: Date.now() + 24 * 60 * 60 * 1000,
+      });
     }
   }
 
   getShopItems(category?: SubsystemName, condition?: PartCondition): ShopItem[] {
-    const items: ShopItem[] = []
+    const items: ShopItem[] = [];
     const catalogueParts = category
-      ? this.partsManager['catalogue'].getPartsForSubsystem(category)
-      : this.partsManager['catalogue'].getAllParts()
+      ? this.partsManager.catalogue.getPartsForSubsystem(category)
+      : this.partsManager.catalogue.getAllParts();
 
     for (const part of catalogueParts) {
-      const conditions: PartCondition[] = condition ? [condition] : ['new', 'refurbished', 'used']
+      const conditions: PartCondition[] = condition ? [condition] : ['new', 'refurbished', 'used'];
 
       for (const cond of conditions) {
-        if (cond === 'new' && part.stock === 0) continue
+        if (cond === 'new' && part.stock === 0) continue;
 
-        const deal = this.dailyDeals.get(part.id)
-        const price = Math.round(part.priceNew * this.partsManager['conditionPriceMultipliers'][cond])
-        const discountedPrice = deal ? Math.round(price * (1 - deal.discount)) : price
+        const deal = this.dailyDeals.get(part.id);
+        const price = Math.round(part.priceNew * this.partsManager.conditionPriceMultipliers[cond]);
+        const discountedPrice = deal ? Math.round(price * (1 - deal.discount)) : price;
 
         items.push({
           part,
           condition: cond,
           price: discountedPrice,
-          reliability: this.partsManager['conditionReliabilityMultipliers'][cond],
+          reliability: this.partsManager.conditionReliabilityMultipliers[cond],
           inStock: cond !== 'new' || part.stock > 0,
           stockCount: cond === 'new' ? part.stock : 999,
           isDiscounted: !!deal,
-          discountPercent: deal ? Math.round(deal.discount * 100) : 0
-        })
+          discountPercent: deal ? Math.round(deal.discount * 100) : 0,
+        });
       }
     }
 
-    return items
+    return items;
   }
 
   getDailyDeals(): ShopItem[] {
-    return this.getShopItems().filter(i => i.isDiscounted)
+    return this.getShopItems().filter(i => i.isDiscounted);
   }
 
   refreshDailyDeals(): void {
-    this.dailyDeals.clear()
-    this.generateDailyDeals()
+    this.dailyDeals.clear();
+    this.generateDailyDeals();
   }
 }

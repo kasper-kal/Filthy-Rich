@@ -1,7 +1,8 @@
-import * as THREE from 'three'
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { ChunkCoord, CHUNK_SIZE, chunkKey } from './WorldGrid.js'
-import { HouseInstance } from './HouseGenerator.js'
+import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import type { ChunkCoord } from './WorldGrid.js';
+import { CHUNK_SIZE, chunkKey } from './WorldGrid.js';
+import type { HouseInstance } from './HouseGenerator.js';
 
 /**
  * ImposterSystem - Creates and manages billboard/low-poly imposters for distant houses
@@ -9,11 +10,11 @@ import { HouseInstance } from './HouseGenerator.js'
  */
 
 export interface ImposterConfig {
-  maxDistance: number
-  atlasSize: number
-  billboardSize: number
-  updateInterval: number // ms
-  fadeDistance: number // distance over which to fade in/out
+  maxDistance: number;
+  atlasSize: number;
+  billboardSize: number;
+  updateInterval: number; // ms
+  fadeDistance: number; // distance over which to fade in/out
 }
 
 const DEFAULT_CONFIG: ImposterConfig = {
@@ -21,29 +22,29 @@ const DEFAULT_CONFIG: ImposterConfig = {
   atlasSize: 1024,
   billboardSize: 20,
   updateInterval: 1000,
-  fadeDistance: 50
-}
+  fadeDistance: 50,
+};
 
 export class ImposterSystem {
-  private scene: THREE.Scene
-  private camera: THREE.Camera
-  private config: ImposterConfig
-  private houseImposters: Map<string, THREE.Mesh> = new Map()
-  private chunkImposters: Map<string, THREE.Mesh> = new Map()
-  private lastUpdate = 0
-  private renderTarget: THREE.WebGLRenderTarget | null = null
-  private renderer: THREE.WebGLRenderer | null = null
-  private imposterCamera: THREE.OrthographicCamera | null = null
+  private scene: THREE.Scene;
+  private camera: THREE.Camera;
+  private config: ImposterConfig;
+  private houseImposters = new Map<string, THREE.Mesh>();
+  private chunkImposters = new Map<string, THREE.Mesh>();
+  private lastUpdate = 0;
+  private renderTarget: THREE.WebGLRenderTarget | null = null;
+  private renderer: THREE.WebGLRenderer | null = null;
+  private imposterCamera: THREE.OrthographicCamera | null = null;
 
   // Shader material for billboard imposters
-  private billboardMaterial: THREE.ShaderMaterial | null = null
+  private billboardMaterial: THREE.ShaderMaterial | null = null;
 
   constructor(scene: THREE.Scene, camera: THREE.Camera, config?: Partial<ImposterConfig>) {
-    this.scene = scene
-    this.camera = camera
-    this.config = { ...DEFAULT_CONFIG, ...config }
+    this.scene = scene;
+    this.camera = camera;
+    this.config = { ...DEFAULT_CONFIG, ...config };
 
-    this.createBillboardMaterial()
+    this.createBillboardMaterial();
   }
 
   /**
@@ -61,9 +62,11 @@ export class ImposterSystem {
         color: { value: new THREE.Color(0xffffff) },
         opacity: { value: 1.0 },
         cameraPosition: { value: new THREE.Vector3() },
-        billboardSize: { value: new THREE.Vector2(this.config.billboardSize, this.config.billboardSize) },
+        billboardSize: {
+          value: new THREE.Vector2(this.config.billboardSize, this.config.billboardSize),
+        },
         fadeNear: { value: this.config.maxDistance - this.config.fadeDistance },
-        fadeFar: { value: this.config.maxDistance }
+        fadeFar: { value: this.config.maxDistance },
       },
       vertexShader: `
         uniform vec2 billboardSize;
@@ -121,27 +124,25 @@ export class ImposterSystem {
 
           gl_FragColor = vec4(finalColor, finalAlpha);
         }
-      `
-    })
+      `,
+    });
   }
 
   /**
    * Initialize renderer for imposter texture generation
    */
   initializeRenderer(renderer: THREE.WebGLRenderer): void {
-    this.renderer = renderer
+    this.renderer = renderer;
     this.renderTarget = new THREE.WebGLRenderTarget(this.config.atlasSize, this.config.atlasSize, {
       format: THREE.RGBAFormat,
       type: THREE.UnsignedByteType,
       minFilter: THREE.LinearMipmapLinearFilter,
       magFilter: THREE.LinearFilter,
-      generateMipmaps: true
-    })
+      generateMipmaps: true,
+    });
 
     // Orthographic camera for rendering house to texture
-    this.imposterCamera = new THREE.OrthographicCamera(
-      -20, 20, 20, -20, 0.1, 100
-    )
+    this.imposterCamera = new THREE.OrthographicCamera(-20, 20, 20, -20, 0.1, 100);
   }
 
   /**
@@ -150,40 +151,40 @@ export class ImposterSystem {
   createHouseImposter(house: HouseInstance): THREE.Mesh | null {
     if (!this.renderer || !this.renderTarget || !this.imposterCamera || !this.billboardMaterial) {
       // Fallback: simple colored plane
-      return this.createFallbackImposter(house)
+      return this.createFallbackImposter(house);
     }
 
-    const templateKey = house.template
-    const existingKey = `house_${templateKey}`
+    const templateKey = house.template;
+    const existingKey = `house_${templateKey}`;
 
     // Check if we already have an imposter texture for this template
-    let texture = (this.billboardMaterial.uniforms.map.value as THREE.Texture)
+    let texture = this.billboardMaterial.uniforms.map.value as THREE.Texture;
 
     if (!texture) {
       // Would render house to texture here
       // For now, create procedural imposter
-      texture = this.createProceduralImposterTexture(house)
-      this.billboardMaterial.uniforms.map.value = texture
+      texture = this.createProceduralImposterTexture(house);
+      this.billboardMaterial.uniforms.map.value = texture;
     }
 
     // Create billboard mesh
-    const geometry = new THREE.PlaneGeometry(this.config.billboardSize, this.config.billboardSize)
-    const mesh = new THREE.Mesh(geometry, this.billboardMaterial.clone())
-    mesh.name = `imposter_${house.id}`
-    mesh.renderOrder = -100
-    mesh.frustumCulled = false // Billboards should always render if in frustum
+    const geometry = new THREE.PlaneGeometry(this.config.billboardSize, this.config.billboardSize);
+    const mesh = new THREE.Mesh(geometry, this.billboardMaterial.clone());
+    mesh.name = `imposter_${house.id}`;
+    mesh.renderOrder = -100;
+    mesh.frustumCulled = false; // Billboards should always render if in frustum
 
     // Position at house center, slightly above ground
-    const bounds = house.bounds
-    const centerX = (bounds.min.x + bounds.max.x) / 2
-    const centerZ = (bounds.min.z + bounds.max.z) / 2
-    const height = bounds.max.y - bounds.min.y
-    mesh.position.set(centerX, height * 0.5, centerZ)
+    const bounds = house.bounds;
+    const centerX = (bounds.min.x + bounds.max.x) / 2;
+    const centerZ = (bounds.min.z + bounds.max.z) / 2;
+    const height = bounds.max.y - bounds.min.y;
+    mesh.position.set(centerX, height * 0.5, centerZ);
 
     // Store reference
-    this.houseImposters.set(house.id, mesh)
+    this.houseImposters.set(house.id, mesh);
 
-    return mesh
+    return mesh;
   }
 
   /**
@@ -194,181 +195,181 @@ export class ImposterSystem {
       house.bounds.max.x - house.bounds.min.x,
       house.bounds.max.y - house.bounds.min.y,
       house.bounds.max.z - house.bounds.min.z
-    )
+    );
     const material = new THREE.MeshBasicMaterial({
       color: 0x888888,
       transparent: true,
       opacity: 0.5,
-      side: THREE.DoubleSide
-    })
-    const mesh = new THREE.Mesh(geometry, material)
-    mesh.name = `imposter_fallback_${house.id}`
-    mesh.renderOrder = -100
+      side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.name = `imposter_fallback_${house.id}`;
+    mesh.renderOrder = -100;
 
-    const centerX = (house.bounds.min.x + house.bounds.max.x) / 2
-    const centerZ = (house.bounds.min.z + house.bounds.max.z) / 2
-    const centerY = (house.bounds.min.y + house.bounds.max.y) / 2
-    mesh.position.set(centerX, centerY, centerZ)
+    const centerX = (house.bounds.min.x + house.bounds.max.x) / 2;
+    const centerZ = (house.bounds.min.z + house.bounds.max.z) / 2;
+    const centerY = (house.bounds.min.y + house.bounds.max.y) / 2;
+    mesh.position.set(centerX, centerY, centerZ);
 
-    this.houseImposters.set(house.id, mesh)
-    return mesh
+    this.houseImposters.set(house.id, mesh);
+    return mesh;
   }
 
   /**
    * Create procedural imposter texture for a house type
    */
   private createProceduralImposterTexture(house: HouseInstance): THREE.Texture {
-    const canvas = document.createElement('canvas')
-    canvas.width = 256
-    canvas.height = 256
-    const ctx = canvas.getContext('2d')!
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d')!;
 
     // Draw simplified house silhouette
-    ctx.fillStyle = '#888888'
-    ctx.fillRect(0, 0, 256, 256)
+    ctx.fillStyle = '#888888';
+    ctx.fillRect(0, 0, 256, 256);
 
     // Roof
-    ctx.fillStyle = '#6b2a2a'
-    ctx.beginPath()
-    ctx.moveTo(32, 128)
-    ctx.lineTo(128, 32)
-    ctx.lineTo(224, 128)
-    ctx.closePath()
-    ctx.fill()
+    ctx.fillStyle = '#6b2a2a';
+    ctx.beginPath();
+    ctx.moveTo(32, 128);
+    ctx.lineTo(128, 32);
+    ctx.lineTo(224, 128);
+    ctx.closePath();
+    ctx.fill();
 
     // Walls
-    ctx.fillStyle = '#e8dcc8'
-    ctx.fillRect(48, 128, 160, 100)
+    ctx.fillStyle = '#e8dcc8';
+    ctx.fillRect(48, 128, 160, 100);
 
     // Door
-    ctx.fillStyle = '#8b0000'
-    ctx.fillRect(118, 178, 20, 50)
+    ctx.fillStyle = '#8b0000';
+    ctx.fillRect(118, 178, 20, 50);
 
     // Windows
-    ctx.fillStyle = '#87ceeb'
-    ctx.fillRect(68, 148, 30, 30)
-    ctx.fillRect(158, 148, 30, 30)
+    ctx.fillStyle = '#87ceeb';
+    ctx.fillRect(68, 148, 30, 30);
+    ctx.fillRect(158, 148, 30, 30);
 
-    const texture = new THREE.CanvasTexture(canvas)
-    texture.minFilter = THREE.LinearMipmapLinearFilter
-    texture.magFilter = THREE.LinearFilter
-    texture.generateMipmaps = true
-    texture.colorSpace = THREE.SRGBColorSpace
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = true;
+    texture.colorSpace = THREE.SRGBColorSpace;
 
     // Also create alpha map
-    const alphaCanvas = document.createElement('canvas')
-    alphaCanvas.width = 256
-    alphaCanvas.height = 256
-    const alphaCtx = alphaCanvas.getContext('2d')!
-    alphaCtx.fillStyle = '#ffffff'
-    alphaCtx.fillRect(0, 0, 256, 256)
+    const alphaCanvas = document.createElement('canvas');
+    alphaCanvas.width = 256;
+    alphaCanvas.height = 256;
+    const alphaCtx = alphaCanvas.getContext('2d')!;
+    alphaCtx.fillStyle = '#ffffff';
+    alphaCtx.fillRect(0, 0, 256, 256);
     // Transparent areas would be black
-    const alphaTexture = new THREE.CanvasTexture(alphaCanvas)
-    alphaTexture.minFilter = THREE.LinearMipmapLinearFilter
-    alphaTexture.magFilter = THREE.LinearFilter
-    alphaTexture.generateMipmaps = true
+    const alphaTexture = new THREE.CanvasTexture(alphaCanvas);
+    alphaTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    alphaTexture.magFilter = THREE.LinearFilter;
+    alphaTexture.generateMipmaps = true;
 
-    this.billboardMaterial!.uniforms.alphaMap.value = alphaTexture
+    this.billboardMaterial!.uniforms.alphaMap.value = alphaTexture;
 
-    return texture
+    return texture;
   }
 
   /**
    * Create imposter for entire chunk (combined mesh for all houses)
    */
   createChunkImposter(chunk: ChunkCoord, houses: HouseInstance[]): THREE.Mesh | null {
-    const key = chunkKey(chunk)
-    const existing = this.chunkImposters.get(key)
-    if (existing) return existing
+    const key = chunkKey(chunk);
+    const existing = this.chunkImposters.get(key);
+    if (existing) return existing;
 
     if (!this.renderer || !this.renderTarget) {
-      return this.createFallbackChunkImposter(chunk, houses)
+      return this.createFallbackChunkImposter(chunk, houses);
     }
 
     // For chunk imposter, we'd render all houses to a single texture
     // For now, create a simple combined mesh
-    const group = new THREE.Group()
-    group.name = `chunk_imposter_${key}`
+    const group = new THREE.Group();
+    group.name = `chunk_imposter_${key}`;
 
     for (const house of houses) {
-      const imposter = this.createHouseImposter(house)
+      const imposter = this.createHouseImposter(house);
       if (imposter) {
-        group.add(imposter)
+        group.add(imposter);
       }
     }
 
     // Create a single merged geometry for performance
-    const geometries: THREE.BufferGeometry[] = []
+    const geometries: THREE.BufferGeometry[] = [];
     group.traverse(obj => {
       if (obj instanceof THREE.Mesh && obj.geometry) {
-        const geo = obj.geometry.clone()
-        geo.applyMatrix4(obj.matrixWorld)
-        geometries.push(geo)
+        const geo = obj.geometry.clone();
+        geo.applyMatrix4(obj.matrixWorld);
+        geometries.push(geo);
       }
-    })
+    });
 
-    if (geometries.length === 0) return null
+    if (geometries.length === 0) return null;
 
-    const mergedGeometry = mergeGeometries(geometries, false)
-    if (!mergedGeometry) return null
+    const mergedGeometry = mergeGeometries(geometries, false);
+    if (!mergedGeometry) return null;
 
-    const material = this.billboardMaterial!.clone()
-    const mesh = new THREE.Mesh(mergedGeometry, material)
-    mesh.name = `chunk_imposter_${key}`
-    mesh.renderOrder = -100
-    mesh.frustumCulled = true
+    const material = this.billboardMaterial!.clone();
+    const mesh = new THREE.Mesh(mergedGeometry, material);
+    mesh.name = `chunk_imposter_${key}`;
+    mesh.renderOrder = -100;
+    mesh.frustumCulled = true;
 
-    this.chunkImposters.set(key, mesh)
+    this.chunkImposters.set(key, mesh);
 
     // Clean up geometries
-    for (const g of geometries) g.dispose()
+    for (const g of geometries) g.dispose();
 
-    return mesh
+    return mesh;
   }
 
   private createFallbackChunkImposter(chunk: ChunkCoord, houses: HouseInstance[]): THREE.Mesh {
-    const geometry = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE)
+    const geometry = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
     const material = new THREE.MeshBasicMaterial({
       color: 0x666666,
       transparent: true,
       opacity: 0.3,
-      side: THREE.DoubleSide
-    })
-    const mesh = new THREE.Mesh(geometry, material)
-    mesh.rotation.x = -Math.PI / 2
+      side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.rotation.x = -Math.PI / 2;
     mesh.position.set(
       chunk.x * CHUNK_SIZE + CHUNK_SIZE / 2,
       0.1,
       chunk.z * CHUNK_SIZE + CHUNK_SIZE / 2
-    )
-    mesh.name = `chunk_imposter_fallback_${chunkKey(chunk)}`
-    mesh.renderOrder = -100
+    );
+    mesh.name = `chunk_imposter_fallback_${chunkKey(chunk)}`;
+    mesh.renderOrder = -100;
 
-    this.chunkImposters.set(chunkKey(chunk), mesh)
-    return mesh
+    this.chunkImposters.set(chunkKey(chunk), mesh);
+    return mesh;
   }
 
   /**
    * Add house imposter to scene
    */
   addHouseImposter(house: HouseInstance): THREE.Mesh | undefined {
-    let imposter = this.houseImposters.get(house.id)
+    let imposter = this.houseImposters.get(house.id);
     if (!imposter) {
-      imposter = this.createHouseImposter(house) || undefined
+      imposter = this.createHouseImposter(house) || undefined;
     }
     if (imposter && !imposter.parent) {
-      this.scene.add(imposter)
+      this.scene.add(imposter);
     }
-    return imposter
+    return imposter;
   }
 
   /**
    * Remove house imposter from scene
    */
   removeHouseImposter(house: HouseInstance): void {
-    const imposter = this.houseImposters.get(house.id)
-    if (imposter && imposter.parent) {
-      imposter.parent.remove(imposter)
+    const imposter = this.houseImposters.get(house.id);
+    if (imposter?.parent) {
+      imposter.parent.remove(imposter);
     }
   }
 
@@ -376,24 +377,24 @@ export class ImposterSystem {
    * Add chunk imposter to scene
    */
   addChunkImposter(chunk: ChunkCoord, houses: HouseInstance[]): THREE.Mesh | undefined {
-    let imposter = this.chunkImposters.get(chunkKey(chunk))
+    let imposter = this.chunkImposters.get(chunkKey(chunk));
     if (!imposter) {
-      imposter = this.createChunkImposter(chunk, houses) || undefined
+      imposter = this.createChunkImposter(chunk, houses) || undefined;
     }
     if (imposter && !imposter.parent) {
-      this.scene.add(imposter)
+      this.scene.add(imposter);
     }
-    return imposter
+    return imposter;
   }
 
   /**
    * Remove chunk imposter from scene
    */
   removeChunkImposter(chunk: ChunkCoord): void {
-    const key = chunkKey(chunk)
-    const imposter = this.chunkImposters.get(key)
-    if (imposter && imposter.parent) {
-      imposter.parent.remove(imposter)
+    const key = chunkKey(chunk);
+    const imposter = this.chunkImposters.get(key);
+    if (imposter?.parent) {
+      imposter.parent.remove(imposter);
     }
   }
 
@@ -401,18 +402,19 @@ export class ImposterSystem {
    * Update all imposters (billboard rotation, fading)
    */
   update(delta: number): void {
-    const now = performance.now()
-    if (now - this.lastUpdate < this.config.updateInterval) return
-    this.lastUpdate = now
+    const now = performance.now();
+    if (now - this.lastUpdate < this.config.updateInterval) return;
+    this.lastUpdate = now;
 
-    if (!this.billboardMaterial) return
+    if (!this.billboardMaterial) return;
 
     // Update camera position uniform
-    this.billboardMaterial.uniforms.cameraPosition.value.copy(this.camera.position)
+    this.billboardMaterial.uniforms.cameraPosition.value.copy(this.camera.position);
 
     // Update fade distances
-    this.billboardMaterial.uniforms.fadeNear.value = this.config.maxDistance - this.config.fadeDistance
-    this.billboardMaterial.uniforms.fadeFar.value = this.config.maxDistance
+    this.billboardMaterial.uniforms.fadeNear.value =
+      this.config.maxDistance - this.config.fadeDistance;
+    this.billboardMaterial.uniforms.fadeFar.value = this.config.maxDistance;
 
     // Billboards are rotated in vertex shader, but we could also
     // do CPU-side rotation for non-shader billboards
@@ -422,9 +424,9 @@ export class ImposterSystem {
    * Set imposter visibility based on distance
    */
   setImposterVisibility(house: HouseInstance, visible: boolean): void {
-    const imposter = this.houseImposters.get(house.id)
+    const imposter = this.houseImposters.get(house.id);
     if (imposter) {
-      imposter.visible = visible
+      imposter.visible = visible;
     }
   }
 
@@ -432,9 +434,9 @@ export class ImposterSystem {
    * Set chunk imposter visibility
    */
   setChunkImposterVisibility(chunk: ChunkCoord, visible: boolean): void {
-    const imposter = this.chunkImposters.get(chunkKey(chunk))
+    const imposter = this.chunkImposters.get(chunkKey(chunk));
     if (imposter) {
-      imposter.visible = visible
+      imposter.visible = visible;
     }
   }
 
@@ -442,38 +444,38 @@ export class ImposterSystem {
    * Get memory usage estimate
    */
   getMemoryUsage(): number {
-    let bytes = 0
+    let bytes = 0;
     for (const mesh of this.houseImposters.values()) {
-      if (mesh.geometry) bytes += this.estimateGeometryMemory(mesh.geometry)
-      if (mesh.material) bytes += this.estimateMaterialMemory(mesh.material)
+      if (mesh.geometry) bytes += this.estimateGeometryMemory(mesh.geometry);
+      if (mesh.material) bytes += this.estimateMaterialMemory(mesh.material);
     }
     for (const mesh of this.chunkImposters.values()) {
-      if (mesh.geometry) bytes += this.estimateGeometryMemory(mesh.geometry)
-      if (mesh.material) bytes += this.estimateMaterialMemory(mesh.material)
+      if (mesh.geometry) bytes += this.estimateGeometryMemory(mesh.geometry);
+      if (mesh.material) bytes += this.estimateMaterialMemory(mesh.material);
     }
     if (this.renderTarget) {
-      bytes += this.config.atlasSize * this.config.atlasSize * 4 * 2 // RGBA + mipmaps
+      bytes += this.config.atlasSize * this.config.atlasSize * 4 * 2; // RGBA + mipmaps
     }
-    return bytes
+    return bytes;
   }
 
   private estimateGeometryMemory(geometry: THREE.BufferGeometry): number {
-    let bytes = 0
+    let bytes = 0;
     for (const attr of Object.values(geometry.attributes)) {
-      bytes += attr.array.byteLength
+      bytes += attr.array.byteLength;
     }
-    if (geometry.index) bytes += geometry.index.array.byteLength
-    return bytes
+    if (geometry.index) bytes += geometry.index.array.byteLength;
+    return bytes;
   }
 
   private estimateMaterialMemory(material: THREE.Material | THREE.Material[]): number {
     if (Array.isArray(material)) {
-      return material.reduce((sum, m) => sum + this.estimateMaterialMemory(m), 0)
+      return material.reduce((sum, m) => sum + this.estimateMaterialMemory(m), 0);
     }
-    let bytes = 1024 // base
-    if ((material as any).map) bytes += 256 * 256 * 4
-    if ((material as any).alphaMap) bytes += 256 * 256 * 4
-    return bytes
+    let bytes = 1024; // base
+    if ((material as any).map) bytes += 256 * 256 * 4;
+    if ((material as any).alphaMap) bytes += 256 * 256 * 4;
+    return bytes;
   }
 
   /**
@@ -481,33 +483,37 @@ export class ImposterSystem {
    */
   dispose(): void {
     for (const mesh of this.houseImposters.values()) {
-      mesh.geometry.dispose()
+      mesh.geometry.dispose();
       if (Array.isArray(mesh.material)) {
-        mesh.material.forEach(m => m.dispose())
+        mesh.material.forEach(m => {
+          m.dispose();
+        });
       } else {
-        mesh.material.dispose()
+        mesh.material.dispose();
       }
     }
-    this.houseImposters.clear()
+    this.houseImposters.clear();
 
     for (const mesh of this.chunkImposters.values()) {
-      mesh.geometry.dispose()
+      mesh.geometry.dispose();
       if (Array.isArray(mesh.material)) {
-        mesh.material.forEach(m => m.dispose())
+        mesh.material.forEach(m => {
+          m.dispose();
+        });
       } else {
-        mesh.material.dispose()
+        mesh.material.dispose();
       }
     }
-    this.chunkImposters.clear()
+    this.chunkImposters.clear();
 
     if (this.renderTarget) {
-      this.renderTarget.dispose()
-      this.renderTarget = null
+      this.renderTarget.dispose();
+      this.renderTarget = null;
     }
 
     if (this.billboardMaterial) {
-      this.billboardMaterial.dispose()
-      this.billboardMaterial = null
+      this.billboardMaterial.dispose();
+      this.billboardMaterial = null;
     }
   }
 }
@@ -516,41 +522,43 @@ export class ImposterSystem {
  * BillboardImposter - Simple billboard for individual objects (trees, props)
  */
 export class BillboardImposter {
-  private mesh: THREE.Mesh
-  private camera: THREE.Camera
+  private mesh: THREE.Mesh;
+  private camera: THREE.Camera;
 
   constructor(texture: THREE.Texture, size: THREE.Vector2, camera: THREE.Camera) {
-    this.camera = camera
+    this.camera = camera;
 
-    const geometry = new THREE.PlaneGeometry(size.x, size.y)
+    const geometry = new THREE.PlaneGeometry(size.x, size.y);
     const material = new THREE.SpriteMaterial({
       map: texture,
       transparent: true,
       alphaTest: 0.1,
       depthTest: true,
-      depthWrite: false
-    })
+      depthWrite: false,
+    });
 
     // Use Sprite for automatic billboarding
-    const sprite = new THREE.Sprite(material)
-    sprite.scale.set(size.x, size.y, 1)
-    this.mesh = sprite as unknown as THREE.Mesh
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(size.x, size.y, 1);
+    this.mesh = sprite as unknown as THREE.Mesh;
   }
 
   setPosition(pos: THREE.Vector3): void {
-    this.mesh.position.copy(pos)
+    this.mesh.position.copy(pos);
   }
 
   getMesh(): THREE.Mesh {
-    return this.mesh
+    return this.mesh;
   }
 
   dispose(): void {
-    this.mesh.geometry.dispose()
+    this.mesh.geometry.dispose();
     if (Array.isArray(this.mesh.material)) {
-      this.mesh.material.forEach(m => m.dispose())
+      this.mesh.material.forEach(m => {
+        m.dispose();
+      });
     } else {
-      this.mesh.material.dispose()
+      this.mesh.material.dispose();
     }
   }
 }
