@@ -87,12 +87,12 @@
 - [x] System enable/disable per state
 - [x] Seamless transitions with camera lerp
 
-### 5.2 Save System Overhaul (PENDING)
-- [ ] World seed (deterministic generation)
-- [ ] Vehicle fleet (specs, condition, position, fuel)
-- [ ] Player position/state
-- [ ] Discovered houses, completed jobs, reputation per area
-- [ ] Garage inventory (parts, tools)
+### 5.2 Save System Overhaul ✓ COMPLETE
+- [x] World seed (deterministic generation)
+- [x] Vehicle fleet (specs, condition, position, fuel)
+- [x] Player position/state
+- [x] Discovered houses, completed jobs, reputation per area
+- [x] Garage inventory (parts, tools)
 
 ### 5.3 Performance Budget (Web) (PENDING)
 - [ ] Dynamic imports/code-splitting for <500KB chunks
@@ -111,7 +111,8 @@
 ---
 
 ## Next Actions
-1. Extend SaveSystem.ts for full world state persistence
-2. Add Vite manualChunks for code-splitting
-3. Create worker files for off-main-thread computation
-4. Add KTX2 texture compression support
+1. Add Vite manualChunks for code-splitting (DONE - all chunks under 600KB)
+2. Create worker files for off-main-thread computation (terrainWorker, houseWorker, physicsWorker)
+3. Add KTX2/BasisU texture compression support
+4. Add HouseTemplates.ts, HouseVariation.ts, ExteriorGenerator.ts for more house variety
+5. Add NavMesh.ts for AI traffic

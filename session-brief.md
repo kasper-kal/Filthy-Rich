@@ -1,7 +1,7 @@
 # Session Brief - Filthy Rich Open World Transformation
 
 **Last Updated:** 2026-08-23
-**Current Phase:** Phase 5 (Integration & Polish) - Save System Overhaul pending
+**Current Phase:** Phase 5 (Integration & Polish) - Save System Overhaul COMPLETE
 **Branch:** main
 
 ---
@@ -32,6 +32,13 @@
    - Fixed `TerrainSystem.ts`: Added null checks for `heightMap` in `createTerrainMesh` and `createLODMeshes`
    - Build now passes with zero errors
 
+2. **2026-08-23** - Completed SaveSystem overhaul:
+   - Rewrote `SaveSystem.ts` with full world state serialization schema (version 2)
+   - Added `BreakdownSystem.restoreBreakdown()` method for save/restore
+   - Fixed `SaveSystem.serializePlayer()` to use `JobSystem.getReputation()` object correctly
+   - Updated `Game.ts` initialization order to pass all 14 dependencies to SaveSystem
+   - Added Vite `manualChunks` for code splitting (all chunks under 600KB)
+
 2. **2026-08-23** - Created PHASES.md master roadmap with all phases and completion status
 
 3. **2026-08-23** - Created session-brief.md for live project state tracking
@@ -40,19 +47,19 @@
 
 ## Active Threads
 
-1. **Save System Overhaul** - Extend SaveSystem.ts for world seed, vehicle fleet, discovered houses, garage inventory
-2. **Code Splitting** - Add Vite manualChunks for <500KB bundles
-3. **Worker Offloading** - Create terrainWorker.ts, houseWorker.ts, physicsWorker.ts
-4. **Texture Compression** - Add KTX2/BasisU pipeline
+1. **Worker Offloading** - Create terrainWorker.ts, houseWorker.ts, physicsWorker.ts
+2. **Texture Compression** - Add KTX2/BasisU pipeline
+3. **House Variety** - Add HouseTemplates.ts, HouseVariation.ts, ExteriorGenerator.ts
+4. **AI Traffic** - Add NavMesh.ts for AI traffic
 
 ---
 
 ## Next Actions
 
-1. **Immediate:** Extend `SaveSystem.ts` to serialize full world state (world seed, vehicle fleet, player position, discovered houses, garage inventory)
-2. **Short-term:** Add `vite.config.ts` manualChunks for code-splitting
-3. **Medium-term:** Create worker files for off-main-thread computation
-4. **Medium-term:** Add KTX2 texture compression support
+1. **Immediate:** Create worker files for off-main-thread computation (terrainWorker.ts, houseWorker.ts, physicsWorker.ts)
+2. **Short-term:** Add KTX2/BasisU texture compression pipeline
+3. **Medium-term:** Add HouseTemplates.ts, HouseVariation.ts, ExteriorGenerator.ts for more house variety
+4. **Medium-term:** Add NavMesh.ts for AI traffic
 
 ---
 
@@ -62,8 +69,13 @@
 - `/workspaces/game/src/world/ImposterSystem.ts` - Fixed imports and return types
 - `/workspaces/game/src/world/RoadNetwork.ts` - Fixed unreachable type comparisons
 - `/workspaces/game/src/world/TerrainSystem.ts` - Fixed null checks
-- `/workspaces/game/PHASES.md` - Created master roadmap
-- `/workspaces/game/session-brief.md` - Created session tracking
+- `/workspaces/game/src/systems/SaveSystem.ts` - COMPLETE REWRITE: Full world state serialization schema v2
+- `/workspaces/game/src/vehicle/BreakdownSystem.ts` - Added `restoreBreakdown()` method
+- `/workspaces/game/src/game/Game.ts` - Updated initialization order for SaveSystem
+- `/workspaces/game/vite.config.ts` - Added manualChunks for code splitting
+- `/workspaces/game/.gitignore` - Proper gitignore
+- `/workspaces/game/PHASES.md` - Created/updated master roadmap
+- `/workspaces/game/session-brief.md` - Created/updated session tracking
 
 ---
 
