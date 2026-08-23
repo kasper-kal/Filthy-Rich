@@ -97,7 +97,7 @@
 ### 5.3 Performance Budget (Web) (IN PROGRESS)
 - [x] Dynamic imports/code-splitting for <500KB chunks
 - [x] Worker offloading (terrainWorker, houseWorker, physicsWorker)
-- [ ] KTX2/BasisU texture compression pipeline
+- [x] KTX2/BasisU texture compression pipeline
 - [ ] Memory profiling and optimization
 
 ---
@@ -111,7 +111,5 @@
 ---
 
 ## Next Actions
-1. Add KTX2/BasisU texture compression support
-2. Add HouseTemplates.ts, HouseVariation.ts, ExteriorGenerator.ts for more house variety
-3. Add NavMesh.ts for AI traffic
-4. Memory profiling and optimization
+1. Memory profiling and optimization
+2. Add NavMesh.ts for AI traffic

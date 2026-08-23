@@ -1,120 +1,113 @@
 #!/usr/bin/env node
+
 /**
- * Texture Compression Build Script
+ * Build-time texture compression script
  * Compresses PNG/JPG textures to KTX2 (UASTC) format using basisu CLI
- * Run at build time: npm run compress-textures
+ *
+ * Run with: npm run compress-textures
+ * Or: node scripts/compress-textures.js
  */
 
-import { execSync } from 'child_process'
-import { existsSync, mkdirSync, readdirSync, statSync } from 'fs'
-import { join, extname, basename } from 'path'
+import { execSync } from 'child_process';
+import { existsSync, mkdirSync, readdirSync, statSync } from 'fs';
+import { join, basename, extname } from 'path';
 
-const BASISU_BIN = './node_modules/basisu/bin/linux/x64_sse/basisu'
-const TEXTURES_DIR = './public/textures'
-const OUTPUT_DIR = './dist/textures'
+const INPUT_DIR = 'public/textures';
+const OUTPUT_DIR = 'dist/textures';
 
-// Compression settings optimized for web game assets
-const SETTINGS = {
-  quality: 128,        // ETC1S quality (1-255), 128 is balanced
-  uastc: true,         // Use UASTC for better quality
-  uastcLevel: 2,       // UASTC encoding level (0-4)
-  uastcRdoL: 1.0,      // UASTC RDO quality scalar
-  ktx2: true,          // Output KTX2 container
-  mipmap: true,        // Generate mipmaps
-  srgb: true,          // Input is sRGB
-  zstdLevel: 6,        // Zstandard compression level for UASTC
-}
+const BASISU_PATH = 'node_modules/basisu/bin/linux/x64_sse/basisu';
 
-function getImageFiles(dir: string): string[] {
-  if (!existsSync(dir)) return []
-  const files: string[] = []
-  const entries = readdirSync(dir, { withFileTypes: true })
+// Texture-specific quality settings
+const TEXTURE_CONFIG = {
+  'asphalt.png': { quality: 128, uastcLevel: 2, rdoLambda: 1.0, normalMap: false },
+  'brick_wall.png': { quality: 128, uastcLevel: 2, rdoLambda: 1.0, normalMap: false },
+  'carpet.png': { quality: 150, uastcLevel: 2, rdoLambda: 0.8, normalMap: false },
+  'concrete.png': { quality: 128, uastcLevel: 2, rdoLambda: 1.0, normalMap: false },
+  'grass.png': { quality: 100, uastcLevel: 2, rdoLambda: 1.5, normalMap: false },
+  'gravel.png': { quality: 128, uastcLevel: 2, rdoLambda: 1.0, normalMap: false },
+  'metal_corrugated.png': { quality: 128, uastcLevel: 2, rdoLambda: 1.0, normalMap: false },
+  'paving_slabs.png': { quality: 128, uastcLevel: 2, rdoLambda: 1.0, normalMap: false },
+  'plaster.png': { quality: 140, uastcLevel: 2, rdoLambda: 0.9, normalMap: false },
+  'roof_tiles.png': { quality: 128, uastcLevel: 2, rdoLambda: 1.0, normalMap: false },
+  'tiles_kitchen.png': { quality: 140, uastcLevel: 2, rdoLambda: 0.9, normalMap: false },
+  'wood_planks.png': { quality: 128, uastcLevel: 2, rdoLambda: 1.0, normalMap: false },
+};
 
-  for (const entry of entries) {
-    const fullPath = join(dir, entry.name)
-    if (entry.isDirectory()) {
-      files.push(...getImageFiles(fullPath))
-    } else {
-      const ext = extname(entry.name).toLowerCase()
-      if (['.png', '.jpg', '.jpeg', '.tga', '.bmp', '.qoi'].includes(ext)) {
-        files.push(fullPath)
-      }
-    }
+function compressTexture(filename) {
+  const inputPath = join(INPUT_DIR, filename);
+  const outputFilename = basename(filename, extname(filename)) + '.ktx2';
+  const outputPath = join(OUTPUT_DIR, outputFilename);
+
+  if (!existsSync(inputPath)) {
+    console.warn(`[compress-textures] Input file not found: ${inputPath}`);
+    return;
   }
-  return files
-}
 
-function buildBasisuArgs(file: string): string[] {
-  const args = [file]
+  const config = TEXTURE_CONFIG[filename] || { quality: 128, uastcLevel: 2, rdoLambda: 1.0, normalMap: false };
 
-  if (SETTINGS.ktx2) args.push('-ktx2')
-  if (SETTINGS.uastc) {
-    args.push('-uastc')
-    args.push(`-uastc_level ${SETTINGS.uastcLevel}`)
-    args.push(`-uastc_rdo_l ${SETTINGS.uastcRdoL}`)
+  const args = [
+    inputPath,
+    '-ktx2',
+    '-uastc',
+    `-uastc_level ${config.uastcLevel}`,
+    `-uastc_rdo_l ${config.rdoLambda}`,
+    `-output_file ${outputPath}`,
+    '-mipmap',
+    '-mip_linear',
+    config.normalMap ? '-normal_map' : '',
+    '-y_flip', // Three.js expects textures flipped Y
+  ].filter(Boolean).join(' ');
+
+  console.log(`[compress-textures] Compressing ${filename} -> ${outputFilename}`);
+  console.log(`[compress-textures] Command: ${BASISU_PATH} ${args}`);
+
+  try {
+    const output = execSync(`${BASISU_PATH} ${args}`, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
+    console.log(`[compress-textures] Success: ${outputFilename}`);
+    if (output.trim()) console.log(output);
+  } catch (error) {
+    console.error(`[compress-textures] Failed to compress ${filename}:`, error.message);
+    if (error.stdout) console.error('stdout:', error.stdout.toString());
+    if (error.stderr) console.error('stderr:', error.stderr.toString());
+    throw error;
   }
-  if (SETTINGS.mipmap) args.push('-mipmap')
-  if (SETTINGS.srgb) args.push('-srgb')
-  args.push(`-q ${SETTINGS.quality}`)
-  args.push(`-output_path ${OUTPUT_DIR}`)
-  args.push(`-ktx2_zstandard_level ${SETTINGS.zstdLevel}`)
-
-  return args
 }
 
-async function compressTextures() {
-  console.log('[TextureCompress] Starting texture compression pipeline...')
-  console.log(`[TextureCompress] Input: ${TEXTURES_DIR}`)
-  console.log(`[TextureCompress] Output: ${OUTPUT_DIR}`)
-  console.log(`[TextureCompress] Settings:`, SETTINGS)
+function main() {
+  console.log('[compress-textures] Starting texture compression...');
 
-  // Create output directory
+  // Ensure output directory exists
   if (!existsSync(OUTPUT_DIR)) {
-    mkdirSync(OUTPUT_DIR, { recursive: true })
+    mkdirSync(OUTPUT_DIR, { recursive: true });
+    console.log(`[compress-textures] Created output directory: ${OUTPUT_DIR}`);
   }
 
-  // Get all image files
-  const imageFiles = getImageFiles(TEXTURES_DIR)
+  // Get all texture files
+  const files = readdirSync(INPUT_DIR)
+    .filter(f => {
+      const ext = extname(f).toLowerCase();
+      return ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tga'].includes(ext);
+    });
 
-  if (imageFiles.length === 0) {
-    console.log('[TextureCompress] No image files found in', TEXTURES_DIR)
-    console.log('[TextureCompress] Create some texture files first (PNG/JPG/TGA)')
-    return
-  }
+  console.log(`[compress-textures] Found ${files.length} textures to compress`);
 
-  console.log(`[TextureCompress] Found ${imageFiles.length} texture(s) to compress`)
+  let success = 0;
+  let failed = 0;
 
-  // Compress each file
-  for (const file of imageFiles) {
-    const relPath = file.replace(TEXTURES_DIR + '/', '')
-    console.log(`[TextureCompress] Compressing: ${relPath}`)
-
+  for (const file of files) {
     try {
-      const args = buildBasisuArgs(file)
-      const cmd = `${BASISU_BIN} ${args.join(' ')}`
-      execSync(cmd, { stdio: 'inherit', cwd: process.cwd() })
-      console.log(`[TextureCompress] ✓ Compressed: ${relPath}`)
+      compressTexture(file);
+      success++;
     } catch (error) {
-      console.error(`[TextureCompress] ✗ Failed: ${relPath}`, error)
+      failed++;
     }
   }
 
-  // Verify output
-  const outputFiles = readdirSync(OUTPUT_DIR, { withFileTypes: true })
-    .filter(f => f.isFile() && f.name.endsWith('.ktx2'))
-    .map(f => f.name)
+  console.log(`\n[compress-textures] Complete: ${success} succeeded, ${failed} failed`);
 
-  console.log(`[TextureCompress] Done! Generated ${outputFiles.length} KTX2 file(s):`)
-  for (const f of outputFiles) {
-    const stats = statSync(join(OUTPUT_DIR, f))
-    console.log(`  - ${f} (${(stats.size / 1024).toFixed(1)} KB)`)
+  if (failed > 0) {
+    process.exit(1);
   }
 }
 
-// Run if called directly
-compressTextures().catch(err => {
-  console.error('[TextureCompress] Fatal error:', err)
-  process.exit(1)
-})
-
-export { compressTextures, SETTINGS, TEXTURES_DIR, OUTPUT_DIR }
+main();
