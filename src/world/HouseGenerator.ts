@@ -1,7 +1,9 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { SceneManager } from '../systems/SceneManager.js'
-import { HOUSE_LAYOUT, RoomData } from '../systems/HouseLayout.js'
+import { HouseTemplate, RoomTemplate, HouseLayoutTemplate, getHouseTemplate, getHouseLayoutTemplate, getAllHouseTemplates } from './HouseTemplates.js'
+import { HouseVariationData, VariationContext, generateHouseVariation, applyVariation, generateRoomVariations, getVariationContext } from './HouseVariation.js'
+import { generateExterior, GeneratedExterior, disposeExterior, updateExteriorLighting, ExteriorGenerationOptions } from './ExteriorGenerator.js'
 
 export interface HouseInstance {
   id: string
@@ -21,252 +23,252 @@ export interface HouseInstance {
   description: string
   bounds: { min: THREE.Vector3; max: THREE.Vector3 }
 
-  // Method to check if a position is near a door
   isDoorNearby(position: THREE.Vector3): boolean
+
+  variation?: HouseVariationData
+  exteriorData?: GeneratedExterior
+  templateData?: HouseTemplate
 }
 
 export class HouseGenerator {
   private sceneManager: SceneManager
   private worldSeed: number
-  private houseMeshes: Map<string, THREE.Group> = new Map()
+  private houseMeshes: Map<string, THREE.Group | THREE.LOD> = new Map()
   private interiorMeshes: Map<string, THREE.Group> = new Map()
-
-  // Template definitions
-  private templates: Map<string, HouseTemplate> = new Map()
+  private exteriorData: Map<string, GeneratedExterior> = new Map()
 
   constructor(sceneManager: SceneManager, worldSeed: number) {
     this.sceneManager = sceneManager
     this.worldSeed = worldSeed
-    this.defineTemplates()
   }
 
-  private defineTemplates(): void {
-    // Terraced house
-    this.templates.set('terraced', {
-      name: 'terraced',
-      width: 6,
-      depth: 12,
-      height: 6.5,
-      floors: 2,
-      roofType: 'pitched',
-      windowStyle: 'sash',
-      doorStyle: 'panel',
-      brickColor: 0xaa6644,
-      roofColor: 0x552211,
-      roomLayout: 'standard_terraced'
-    })
+  generateExterior(house: HouseInstance): THREE.Group | THREE.LOD {
+    const baseTemplate = getHouseTemplate(house.template)
+    if (!baseTemplate) {
+      console.warn(`[HouseGenerator] Unknown template: ${house.template}, falling back to terraced`)
+      return this.generateFallbackExterior(house)
+    }
 
-    // Semi-detached
-    this.templates.set('semi_detached', {
-      name: 'semi_detached',
-      width: 8,
-      depth: 10,
-      height: 7,
-      floors: 2,
-      roofType: 'pitched',
-      windowStyle: 'casement',
-      doorStyle: 'upvc',
-      brickColor: 0xb8860b,
-      roofColor: 0x654321,
-      roomLayout: 'standard_semi'
-    })
+    const variationContext = getVariationContext(house.id, house.chunkId, house.variant, this.worldSeed)
+    variationContext.templateName = house.template
+    variationContext.jobType = house.jobTitle
+    const variation = generateHouseVariation(variationContext)
 
-    // Detached
-    this.templates.set('detached', {
-      name: 'detached',
-      width: 10,
-      depth: 12,
-      height: 8,
-      floors: 2,
-      roofType: 'hipped',
-      windowStyle: 'bay',
-      doorStyle: 'composite',
-      brickColor: 0xd2b48c,
-      roofColor: 0x8b4513,
-      roomLayout: 'standard_detached'
-    })
+    const template = applyVariation(baseTemplate, variation)
 
-    // Bungalow
-    this.templates.set('bungalow', {
-      name: 'bungalow',
-      width: 12,
-      depth: 10,
-      height: 4.5,
-      floors: 1,
-      roofType: 'pitched',
-      windowStyle: 'casement',
-      doorStyle: 'upvc',
-      brickColor: 0xc0a080,
-      roofColor: 0x8b7355,
-      roomLayout: 'bungalow'
-    })
+    house.variation = variation
+    house.templateData = template
 
-    // Cottage
-    this.templates.set('cottage', {
-      name: 'cottage',
-      width: 7,
-      depth: 9,
-      height: 6,
-      floors: 1.5,
-      roofType: 'thatched',
-      windowStyle: 'diamond',
-      doorStyle: 'stable',
-      brickColor: 0xddc8a8,
-      roofColor: 0xc2b280,
-      roomLayout: 'cottage'
-    })
-  }
-
-  generateExterior(house: HouseInstance): THREE.Group {
-    const template = this.templates.get(house.template) || this.templates.get('terraced')!
     const group = new THREE.Group()
     group.name = `house_${house.id}_exterior`
     group.position.copy(house.position)
     group.rotation.y = house.rotation
 
-    // Create deterministic RNG for this house
     const rng = this.createRNG(house.seed)
 
-    // Foundation
-    const foundation = this.createFoundation(template, rng)
-    group.add(foundation)
+    const exteriorOptions: ExteriorGenerationOptions = {
+      template,
+      variation,
+      position: new THREE.Vector3(0, 0, 0),
+      rotation: 0,
+      rng,
+      sceneManager: this.sceneManager
+    }
 
-    // Walls
-    const walls = this.createWalls(template, rng)
-    group.add(walls)
+    const exterior = generateExterior(exteriorOptions)
+    group.add(exterior.group)
 
-    // Roof
-    const roof = this.createRoof(template, rng)
-    group.add(roof)
+    this.exteriorData.set(house.id, exterior)
 
-    // Windows
-    const windows = this.createWindows(template, rng)
-    group.add(windows)
-
-    // Door
-    const door = this.createDoor(template, rng)
-    group.add(door)
-
-    // Details (gutters, pipes, chimney)
-    const details = this.createDetails(template, rng)
-    group.add(details)
-
-    // Garden/Drive
-    const exterior = this.createExteriorArea(template, house, rng)
-    group.add(exterior)
-
-    // LOD meshes
     this.createLODMeshes(group, template, house)
 
     this.houseMeshes.set(house.id, group)
     this.sceneManager.scene.add(group)
 
+    house.exteriorLoaded = true
+    return group
+  }
+
+  private generateFallbackExterior(house: HouseInstance): THREE.Group {
+    const group = new THREE.Group()
+    group.name = `house_${house.id}_exterior_fallback`
+    group.position.copy(house.position)
+    group.rotation.y = house.rotation
+
+    const geom = new THREE.BoxGeometry(6, 7, 10)
+    const mat = new THREE.MeshStandardMaterial({ color: 0xaa6644, roughness: 0.9 })
+    const mesh = new THREE.Mesh(geom, mat)
+    mesh.position.y = 3.5
+    mesh.castShadow = true
+    mesh.receiveShadow = true
+    group.add(mesh)
+
+    this.createLODMeshes(group, { width: 6, depth: 10, height: 7 } as HouseTemplate, house)
+    this.houseMeshes.set(house.id, group)
+    this.sceneManager.scene.add(group)
+    house.exteriorLoaded = true
     return group
   }
 
   generateInterior(house: HouseInstance): THREE.Group {
-    const template = this.templates.get(house.template) || this.templates.get('terraced')!
+    let template = house.templateData
+    let variation = house.variation
+
+    if (!template) {
+      const baseTemplate = getHouseTemplate(house.template)
+      template = baseTemplate || getHouseTemplate('terraced')!
+    }
+
+    if (!variation) {
+      const variationContext = getVariationContext(house.id, house.chunkId, house.variant, this.worldSeed)
+      variationContext.templateName = house.template
+      variationContext.jobType = house.jobTitle
+      variation = generateHouseVariation(variationContext)
+      house.variation = variation
+    }
+
+    const layout = getHouseLayoutTemplate(template.roomLayout)
     const group = new THREE.Group()
     group.name = `house_${house.id}_interior`
     group.position.copy(house.position)
     group.rotation.y = house.rotation
 
-    // Use the standard HOUSE_LAYOUT but with variations
     const rng = this.createRNG(house.seed + 1000)
 
-    // Floor
-    const floor = this.createInteriorFloor(template, rng)
+    const rooms = layout ? layout.rooms : []
+    const variedRooms = generateRoomVariations(variation, rooms, rng)
+
+    const floor = this.createInteriorFloor(template, variation, rng)
     group.add(floor)
 
-    // Ceiling
-    const ceiling = this.createCeiling(template, rng)
+    const ceiling = this.createCeiling(template, variation, rng)
     group.add(ceiling)
 
-    // Walls with doors/windows cutouts
-    const walls = this.createInteriorWalls(template, rng)
+    const walls = this.createInteriorWalls(template, variation, variedRooms, layout, rng)
     group.add(walls)
 
-    // Room divisions
-    const rooms = this.createRoomDivisions(template, rng)
-    group.add(rooms)
+    const roomDivs = this.createRoomDivisions(template, variation, variedRooms, layout, rng)
+    group.add(roomDivs)
 
-    // Stairs (if 2 floors)
-    if (template.floors > 1) {
-      const stairs = this.createStairs(template, rng)
+    if (template.floors > 1 && layout?.stairs) {
+      const stairs = this.createStairs(template, variation, layout.stairs, rng)
       group.add(stairs)
     }
 
     this.interiorMeshes.set(house.id, group)
     this.sceneManager.scene.add(group)
 
+    house.interiorLoaded = true
     return group
   }
 
-  private createFoundation(template: HouseTemplate, rng: () => number): THREE.Mesh {
-    const geometry = new THREE.BoxGeometry(template.width + 0.4, 0.5, template.depth + 0.4)
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x333333,
-      roughness: 0.9,
-      metalness: 0.0
-    })
-    const mesh = new THREE.Mesh(geometry, material)
-    mesh.position.y = 0.25
+  private createInteriorFloor(template: HouseTemplate, variation: HouseVariationData, rng: () => number): THREE.Mesh {
+    const geom = new THREE.PlaneGeometry(template.width - 0.6, template.depth - 0.6)
+    const floorColor = this.getFloorColor(variation.floorMaterialScheme, rng)
+    const mat = new THREE.MeshStandardMaterial({ color: floorColor, roughness: 0.85, side: THREE.DoubleSide })
+    const mesh = new THREE.Mesh(geom, mat)
+    mesh.rotation.x = -Math.PI / 2
+    mesh.position.y = 0.01
     mesh.receiveShadow = true
     return mesh
   }
 
-  private createWalls(template: HouseTemplate, rng: () => number): THREE.Group {
+  private createCeiling(template: HouseTemplate, variation: HouseVariationData, rng: () => number): THREE.Mesh {
+    const geom = new THREE.PlaneGeometry(template.width - 0.6, template.depth - 0.6)
+    const mat = new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.95, side: THREE.DoubleSide })
+    const mesh = new THREE.Mesh(geom, mat)
+    mesh.rotation.x = Math.PI / 2
+    mesh.position.y = template.floors > 1 ? 3 : 2.5
+    return mesh
+  }
+
+  private createInteriorWalls(template: HouseTemplate, variation: HouseVariationData, rooms: RoomTemplate[], layout: HouseLayoutTemplate | undefined, rng: () => number): THREE.Group {
     const group = new THREE.Group()
+    const wallColor = this.getWallColor(variation.wallColorScheme, rng)
+    const wallMat = new THREE.MeshStandardMaterial({ color: wallColor, roughness: 0.9, side: THREE.DoubleSide })
+    const height = template.floors > 1 ? 3 : 2.5
+    const thickness = 0.15
 
-    const wallMaterial = new THREE.MeshStandardMaterial({
-      color: template.brickColor,
-      roughness: 0.9,
-      metalness: 0.0
-    })
+    const wallWidth = template.width - 0.6
+    const wallDepth = template.depth - 0.6
 
-    const wallHeight = template.height - (template.roofType === 'pitched' ? 2 : 1)
-    const wallThickness = 0.3
-
-    // Front wall (with door/window openings)
-    const frontWall = this.createWallWithOpenings(
-      template.width, wallHeight, wallThickness,
-      [{ x: 0, y: 1, w: 1, h: 2.1 }, { x: -1.5, y: 1.5, w: 1.2, h: 1.2 }, { x: 1.5, y: 1.5, w: 1.2, h: 1.2 }],
-      wallMaterial
+    const southWall = this.createWallWithOpenings(
+      wallWidth, height, thickness,
+      this.getWallOpenings(rooms, layout, 'south', template),
+      wallMat
     )
-    frontWall.position.set(0, wallHeight / 2, template.depth / 2 + wallThickness / 2)
-    group.add(frontWall)
+    southWall.position.set(0, height / 2, wallDepth / 2 + thickness / 2)
+    group.add(southWall)
 
-    // Back wall
-    const backWall = this.createWallWithOpenings(
-      template.width, wallHeight, wallThickness,
-      [{ x: -1.5, y: 1.5, w: 1.2, h: 1.2 }, { x: 1.5, y: 1.5, w: 1.2, h: 1.2 }],
-      wallMaterial
+    const northWall = this.createWallWithOpenings(
+      wallWidth, height, thickness,
+      this.getWallOpenings(rooms, layout, 'north', template),
+      wallMat
     )
-    backWall.position.set(0, wallHeight / 2, -template.depth / 2 - wallThickness / 2)
-    backWall.rotation.y = Math.PI
-    group.add(backWall)
+    northWall.position.set(0, height / 2, -wallDepth / 2 - thickness / 2)
+    northWall.rotation.y = Math.PI
+    group.add(northWall)
 
-    // Left wall
-    const leftWall = this.createWallWithOpenings(
-      template.depth, wallHeight, wallThickness,
-      [{ x: 0, y: 1.5, w: 1.2, h: 1.2 }],
-      wallMaterial
+    const westWall = this.createWallWithOpenings(
+      wallDepth, height, thickness,
+      this.getWallOpenings(rooms, layout, 'west', template),
+      wallMat
     )
-    leftWall.position.set(-template.width / 2 - wallThickness / 2, wallHeight / 2, 0)
-    leftWall.rotation.y = -Math.PI / 2
-    group.add(leftWall)
+    westWall.position.set(-wallWidth / 2 - thickness / 2, height / 2, 0)
+    westWall.rotation.y = -Math.PI / 2
+    group.add(westWall)
 
-    // Right wall
-    const rightWall = this.createWallWithOpenings(
-      template.depth, wallHeight, wallThickness,
-      [{ x: 0, y: 1.5, w: 1.2, h: 1.2 }],
-      wallMaterial
+    const eastWall = this.createWallWithOpenings(
+      wallDepth, height, thickness,
+      this.getWallOpenings(rooms, layout, 'east', template),
+      wallMat
     )
-    rightWall.position.set(template.width / 2 + wallThickness / 2, wallHeight / 2, 0)
-    rightWall.rotation.y = Math.PI / 2
-    group.add(rightWall)
+    eastWall.position.set(wallWidth / 2 + thickness / 2, height / 2, 0)
+    eastWall.rotation.y = Math.PI / 2
+    group.add(eastWall)
 
     return group
+  }
+
+  private getWallOpenings(rooms: RoomTemplate[], layout: HouseLayoutTemplate | undefined, wall: 'north' | 'south' | 'east' | 'west', template: HouseTemplate): Array<{ x: number; y: number; w: number; h: number }> {
+    const openings: Array<{ x: number; y: number; w: number; h: number }> = []
+
+    if (layout) {
+      for (const room of layout.rooms) {
+        for (const door of room.doorPositions) {
+          if (door.connectsTo === 'outside') {
+            const wallMap: Record<string, 'north' | 'south' | 'east' | 'west'> = {
+              'north': 'north', 'south': 'south', 'east': 'east', 'west': 'west'
+            }
+            if (wallMap[door.wall] === wall) {
+              const houseX = room.position.x + (door.position - 0.5) * door.width
+              openings.push({
+                x: houseX,
+                y: 1,
+                w: door.width,
+                h: door.height
+              })
+            }
+          }
+        }
+        for (const window of room.windowPositions) {
+          const wallMap: Record<string, 'north' | 'south' | 'east' | 'west'> = {
+              'north': 'north', 'south': 'south', 'east': 'east', 'west': 'west'
+            }
+          if (wallMap[window.wall] === wall && room.minFloor === 0) {
+            const houseX = room.position.x + window.x
+            openings.push({
+              x: houseX,
+              y: window.heightFromFloor || 1.5,
+              w: window.width,
+              h: window.height
+            })
+          }
+        }
+      }
+    }
+
+    return openings
   }
 
   private createWallWithOpenings(
@@ -274,16 +276,11 @@ export class HouseGenerator {
     openings: { x: number; y: number; w: number; h: number }[],
     material: THREE.Material
   ): THREE.Mesh {
-    // Use CSG-like approach: create wall sections around openings
     const group = new THREE.Group()
-
-    // Sort openings by y position
     openings.sort((a, b) => a.y - b.y)
 
     let lastY = 0
-
     for (const opening of openings) {
-      // Wall below opening
       if (opening.y > lastY) {
         const h = opening.y - lastY
         const geom = new THREE.BoxGeometry(width, h, thickness)
@@ -292,7 +289,6 @@ export class HouseGenerator {
         group.add(mesh)
       }
 
-      // Wall above opening (left side)
       if (opening.x - opening.w / 2 > -width / 2) {
         const w = opening.x - opening.w / 2 + width / 2
         const geom = new THREE.BoxGeometry(w, opening.h, thickness)
@@ -301,7 +297,6 @@ export class HouseGenerator {
         group.add(mesh)
       }
 
-      // Wall above opening (right side)
       if (opening.x + opening.w / 2 < width / 2) {
         const w = width / 2 - (opening.x + opening.w / 2)
         const geom = new THREE.BoxGeometry(w, opening.h, thickness)
@@ -313,7 +308,6 @@ export class HouseGenerator {
       lastY = opening.y + opening.h
     }
 
-    // Wall above last opening
     if (lastY < height) {
       const h = height - lastY
       const geom = new THREE.BoxGeometry(width, h, thickness)
@@ -322,15 +316,12 @@ export class HouseGenerator {
       group.add(mesh)
     }
 
-    // Merge into single mesh
-    const mergedGeometry = new THREE.BufferGeometry()
     const meshes: THREE.Mesh[] = []
     group.traverse(child => {
       if (child instanceof THREE.Mesh) meshes.push(child)
     })
 
     if (meshes.length === 1) return meshes[0]
-
     const merged = mergeGeometries(meshes.map(m => m.geometry), false)
     const mergedMesh = new THREE.Mesh(merged, material)
     mergedMesh.castShadow = true
@@ -338,421 +329,58 @@ export class HouseGenerator {
     return mergedMesh
   }
 
-  private createRoof(template: HouseTemplate, rng: () => number): THREE.Group {
+  private createRoomDivisions(template: HouseTemplate, variation: HouseVariationData, rooms: RoomTemplate[], layout: HouseLayoutTemplate | undefined, rng: () => number): THREE.Group {
     const group = new THREE.Group()
-
-    const roofMaterial = new THREE.MeshStandardMaterial({
-      color: template.roofColor,
-      roughness: 0.8,
-      metalness: 0.1
-    })
-
-    const wallHeight = template.height - (template.roofType === 'pitched' ? 2 : 1)
-    let roofHeight = 2 // default for pitched
-
-    if (template.roofType === 'pitched') {
-      // Simple gable roof
-      roofHeight = 2
-      const roofDepth = template.depth + 0.6
-      const roofWidth = template.width + 0.6
-
-      const shape = new THREE.Shape()
-      shape.moveTo(-roofWidth / 2, 0)
-      shape.lineTo(0, roofHeight)
-      shape.lineTo(roofWidth / 2, 0)
-      shape.lineTo(-roofWidth / 2, 0)
-
-      const extrudeSettings = {
-        depth: roofDepth,
-        bevelEnabled: false
-      }
-
-      const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings)
-      geometry.rotateX(-Math.PI / 2)
-      geometry.translate(0, wallHeight + roofHeight / 2, 0)
-
-      const mesh = new THREE.Mesh(geometry, roofMaterial)
-      mesh.castShadow = true
-      mesh.receiveShadow = true
-      group.add(mesh)
-    } else if (template.roofType === 'hipped') {
-      // Hipped roof - four sloping sides
-      roofHeight = 2.5
-      const roofDepth = template.depth + 0.6
-      const roofWidth = template.width + 0.6
-
-      // Create as multiple planes
-      const ridgeLength = roofWidth - roofDepth
-      const halfDepth = roofDepth / 2
-      const halfWidth = roofWidth / 2
-
-      // Two trapezoidal ends
-      for (let side = -1; side <= 1; side += 2) {
-        const shape = new THREE.Shape()
-        shape.moveTo(-halfWidth, -halfDepth)
-        shape.lineTo(0, 0)
-        shape.lineTo(halfWidth, -halfDepth)
-        shape.lineTo(halfWidth, halfDepth)
-        shape.lineTo(-halfWidth, halfDepth)
-
-        const extrudeSettings = { depth: roofHeight, bevelEnabled: false }
-        const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings)
-        geometry.rotateX(-Math.PI / 2)
-        geometry.translate(0, wallHeight + roofHeight / 2, side * ridgeLength / 2)
-
-        const mesh = new THREE.Mesh(geometry, roofMaterial)
-        mesh.castShadow = true
-        group.add(mesh)
-      }
-
-      // Two triangular sides
-      for (let side = -1; side <= 1; side += 2) {
-        const shape = new THREE.Shape()
-        shape.moveTo(-halfDepth, 0)
-        shape.lineTo(0, roofHeight)
-        shape.lineTo(halfDepth, 0)
-
-        const extrudeSettings = { depth: ridgeLength, bevelEnabled: false }
-        const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings)
-        geometry.rotateX(-Math.PI / 2)
-        geometry.rotateZ(Math.PI / 2)
-        geometry.translate(side * (halfWidth + ridgeLength / 2), wallHeight + roofHeight / 2, 0)
-
-        const mesh = new THREE.Mesh(geometry, roofMaterial)
-        mesh.castShadow = true
-        group.add(mesh)
-      }
-    } else if (template.roofType === 'thatched') {
-      // Thatch - irregular, thicker
-      roofHeight = 2.5
-      const roofDepth = template.depth + 0.8
-      const roofWidth = template.width + 0.8
-
-      const shape = new THREE.Shape()
-      shape.moveTo(-roofWidth / 2, 0)
-      shape.lineTo(0, roofHeight * 1.2)
-      shape.lineTo(roofWidth / 2, 0)
-      shape.lineTo(-roofWidth / 2, 0)
-
-      const extrudeSettings = { depth: roofDepth, bevelEnabled: false }
-      const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings)
-      geometry.rotateX(-Math.PI / 2)
-      geometry.translate(0, wallHeight + roofHeight / 2, 0)
-
-      // Add thickness variation with vertex displacement
-      const positions = geometry.attributes.position
-      for (let i = 0; i < positions.count; i++) {
-        const y = positions.getY(i)
-        if (y > wallHeight + roofHeight * 0.5) {
-          positions.setY(i, y + (rng() - 0.5) * 0.1)
-        }
-      }
-      geometry.computeVertexNormals()
-
-      const mesh = new THREE.Mesh(geometry, roofMaterial)
-      mesh.castShadow = true
-      group.add(mesh)
-    }
-
-    // Chimney
-    if (rng() < 0.7) {
-      const chimney = this.createChimney(template, wallHeight, roofHeight, roofMaterial)
-      group.add(chimney)
-    }
-
-    return group
-  }
-
-  private createChimney(template: HouseTemplate, wallHeight: number, roofHeight: number, material: THREE.Material): THREE.Mesh {
-    const geom = new THREE.BoxGeometry(0.8, roofHeight + 1, 0.6)
-    const mesh = new THREE.Mesh(geom, material)
-    mesh.position.set(template.width / 2 - 1.2, wallHeight + roofHeight / 2 + 0.5, 0)
-    mesh.castShadow = true
-    return mesh
-  }
-
-  private createWindows(template: HouseTemplate, rng: () => number): THREE.Group {
-    const group = new THREE.Group()
-    const glassMaterial = new THREE.MeshStandardMaterial({
-      color: 0x88ccff,
-      roughness: 0.1,
-      metalness: 0.9,
-      transparent: true,
-      opacity: 0.6,
-      side: THREE.DoubleSide
-    })
-    const frameMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.3,
-      metalness: 0.0
-    })
-
-    const wallHeight = template.height - (template.roofType === 'pitched' ? 2 : 1)
-    const windowSize = template.windowStyle === 'bay' ? { w: 2, h: 1.5 } : { w: 1.2, h: 1.2 }
-    const windowY = 1.5
-
-    // Front windows
-    for (const x of [-1.5, 1.5]) {
-      const frame = new THREE.Group()
-      const glass = new THREE.Mesh(
-        new THREE.PlaneGeometry(windowSize.w, windowSize.h),
-        glassMaterial
-      )
-      glass.position.z = 0.01
-      frame.add(glass)
-
-      // Frame
-      const frameGeom = new THREE.BoxGeometry(windowSize.w + 0.1, windowSize.h + 0.1, 0.1)
-      const frameMesh = new THREE.Mesh(frameGeom, frameMaterial)
-      frame.add(frameMesh)
-
-      frame.position.set(x, windowY + windowSize.h / 2, template.depth / 2 + 0.16)
-      group.add(frame)
-    }
-
-    // Side windows
-    for (const z of [-2, 0, 2]) {
-      const frame = new THREE.Group()
-      const glass = new THREE.Mesh(
-        new THREE.PlaneGeometry(windowSize.w, windowSize.h),
-        glassMaterial
-      )
-      glass.position.x = 0.01
-      frame.add(glass)
-
-      const frameGeom = new THREE.BoxGeometry(windowSize.w + 0.1, windowSize.h + 0.1, 0.1)
-      const frameMesh = new THREE.Mesh(frameGeom, frameMaterial)
-      frame.add(frameMesh)
-
-      frame.position.set(-template.width / 2 - 0.16, windowY + windowSize.h / 2, z)
-      frame.rotation.y = -Math.PI / 2
-      group.add(frame)
-
-      // Right side
-      const frame2 = frame.clone()
-      frame2.position.set(template.width / 2 + 0.16, windowY + windowSize.h / 2, z)
-      frame2.rotation.y = Math.PI / 2
-      group.add(frame2)
-    }
-
-    // Upper floor windows (if 2 floors)
-    if (template.floors > 1) {
-      const upperY = wallHeight / 2 + 1.5
-      for (const x of [-1.5, 0, 1.5]) {
-        const frame = new THREE.Group()
-        const glass = new THREE.Mesh(
-          new THREE.PlaneGeometry(windowSize.w * 0.8, windowSize.h * 0.8),
-          glassMaterial
-        )
-        glass.position.z = 0.01
-        frame.add(glass)
-
-        const frameGeom = new THREE.BoxGeometry(windowSize.w * 0.8 + 0.1, windowSize.h * 0.8 + 0.1, 0.1)
-        const frameMesh = new THREE.Mesh(frameGeom, frameMaterial)
-        frame.add(frameMesh)
-
-        frame.position.set(x, upperY, template.depth / 2 + 0.16)
-        group.add(frame)
-      }
-    }
-
-    return group
-  }
-
-  private createDoor(template: HouseTemplate, rng: () => number): THREE.Group {
-    const group = new THREE.Group()
-
-    const doorMaterial = new THREE.MeshStandardMaterial({
-      color: template.doorStyle === 'composite' ? 0x2c3e50 : 0x8b4513,
-      roughness: 0.4,
-      metalness: 0.1
-    })
-
-    const doorGeom = new THREE.BoxGeometry(1, 2.1, 0.05)
-    const doorMesh = new THREE.Mesh(doorGeom, doorMaterial)
-    doorMesh.position.set(0, 1.05, template.depth / 2 + 0.18)
-    doorMesh.castShadow = true
-    group.add(doorMesh)
-
-    // Door frame
-    const frameMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
-    const frameGeom = new THREE.BoxGeometry(1.15, 2.25, 0.1)
-    const frameMesh = new THREE.Mesh(frameGeom, frameMaterial)
-    frameMesh.position.set(0, 1.125, template.depth / 2 + 0.13)
-    group.add(frameMesh)
-
-    // Porch canopy
-    if (rng() < 0.5) {
-      const canopyGeom = new THREE.BoxGeometry(1.5, 0.1, 1)
-      const canopyMesh = new THREE.Mesh(canopyGeom, new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.8 }))
-      canopyMesh.position.set(0, 2.2, template.depth / 2 + 0.6)
-      canopyMesh.castShadow = true
-      group.add(canopyMesh)
-    }
-
-    return group
-  }
-
-  private createDetails(template: HouseTemplate, rng: () => number): THREE.Group {
-    const group = new THREE.Group()
-
-    // Gutters and downpipes
-    const gutterMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5 })
-
-    // Front gutter
-    const gutterGeom = new THREE.BoxGeometry(template.width + 0.4, 0.1, 0.1)
-    const frontGutter = new THREE.Mesh(gutterGeom, gutterMaterial)
-    frontGutter.position.set(0, template.height - 2, template.depth / 2 + 0.3)
-    group.add(frontGutter)
-
-    // Downpipes
-    for (const x of [-template.width / 2 + 0.5, template.width / 2 - 0.5]) {
-      const pipeGeom = new THREE.CylinderGeometry(0.05, 0.05, template.height - 2.5)
-      const pipe = new THREE.Mesh(pipeGeom, gutterMaterial)
-      pipe.position.set(x, template.height / 2, template.depth / 2 + 0.3)
-      group.add(pipe)
-    }
-
-    return group
-  }
-
-  private createExteriorArea(template: HouseTemplate, house: HouseInstance, rng: () => number): THREE.Group {
-    const group = new THREE.Group()
-
-    // Driveway
-    const driveGeom = new THREE.PlaneGeometry(3, template.depth + 5)
-    const driveMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.9 })
-    const drive = new THREE.Mesh(driveGeom, driveMat)
-    drive.rotation.x = -Math.PI / 2
-    drive.position.set(0, 0.01, -2.5)
-    drive.receiveShadow = true
-    group.add(drive)
-
-    // Grass
-    const grassGeom = new THREE.PlaneGeometry(template.width + 4, template.depth + 4)
-    const grassMat = new THREE.MeshStandardMaterial({ color: 0x4a7c2e, roughness: 1.0 })
-    const grass = new THREE.Mesh(grassGeom, grassMat)
-    grass.rotation.x = -Math.PI / 2
-    grass.position.y = 0.005
-    grass.receiveShadow = true
-    group.add(grass)
-
-    // Flower beds
-    if (rng() < 0.6) {
-      for (const side of [-1, 1]) {
-        const bedGeom = new THREE.BoxGeometry(0.8, 0.3, template.depth * 0.6)
-        const bedMat = new THREE.MeshStandardMaterial({ color: 0x3a5a2e, roughness: 0.9 })
-        const bed = new THREE.Mesh(bedGeom, bedMat)
-        bed.position.set(side * (template.width / 2 + 0.4), 0.15, 0)
-        group.add(bed)
-      }
-    }
-
-    // Wheelie bin
-    if (rng() < 0.8) {
-      const bin = this.createWheelieBin(rng)
-      bin.position.set((rng() - 0.5) * template.width * 0.5, 0, template.depth / 2 + 2)
-      group.add(bin)
-    }
-
-    return group
-  }
-
-  private createWheelieBin(rng: () => number): THREE.Group {
-    const colors = [0x228b22, 0x1a5c1a, 0x006400, 0x8b4513]
-    const bodyGeom = new THREE.CylinderGeometry(0.25, 0.3, 0.6, 8)
-    const lidGeom = new THREE.CylinderGeometry(0.28, 0.28, 0.08, 8)
-
-    const bodyMat = new THREE.MeshStandardMaterial({ color: colors[Math.floor(rng() * colors.length)], roughness: 0.7 })
-    const lidMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 })
-
-    const group = new THREE.Group()
-    const body = new THREE.Mesh(bodyGeom, bodyMat)
-    body.position.y = 0.3
-    body.castShadow = true
-    group.add(body)
-
-    const lid = new THREE.Mesh(lidGeom, lidMat)
-    lid.position.y = 0.64
-    group.add(lid)
-
-    return group
-  }
-
-  private createInteriorFloor(template: HouseTemplate, rng: () => number): THREE.Mesh {
-    const geom = new THREE.PlaneGeometry(template.width - 0.6, template.depth - 0.6)
-    const mat = new THREE.MeshStandardMaterial({ color: 0x8b7355, roughness: 0.85, side: THREE.DoubleSide })
-    const mesh = new THREE.Mesh(geom, mat)
-    mesh.rotation.x = -Math.PI / 2
-    mesh.position.y = 0.01
-    mesh.receiveShadow = true
-    return mesh
-  }
-
-  private createCeiling(template: HouseTemplate, rng: () => number): THREE.Mesh {
-    const geom = new THREE.PlaneGeometry(template.width - 0.6, template.depth - 0.6)
-    const mat = new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.95, side: THREE.DoubleSide })
-    const mesh = new THREE.Mesh(geom, mat)
-    mesh.rotation.x = Math.PI / 2
-    mesh.position.y = template.floors > 1 ? 3 : 2.5
-    return mesh
-  }
-
-  private createInteriorWalls(template: HouseTemplate, rng: () => number): THREE.Group {
-    const group = new THREE.Group()
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0xe8dcc8, roughness: 0.9, side: THREE.DoubleSide })
-    const height = template.floors > 1 ? 3 : 2.5
-    const thickness = 0.15
-
-    // Four walls
-    const walls = [
-      { w: template.width - 0.6, d: thickness, pos: new THREE.Vector3(0, height / 2, -(template.depth - 0.6) / 2) },
-      { w: template.width - 0.6, d: thickness, pos: new THREE.Vector3(0, height / 2, (template.depth - 0.6) / 2) },
-      { w: thickness, d: template.depth - 0.6, pos: new THREE.Vector3(-(template.width - 0.6) / 2, height / 2, 0) },
-      { w: thickness, d: template.depth - 0.6, pos: new THREE.Vector3((template.width - 0.6) / 2, height / 2, 0) }
-    ]
-
-    for (const wall of walls) {
-      const geom = new THREE.BoxGeometry(wall.w, height, wall.d)
-      const mesh = new THREE.Mesh(geom, wallMat)
-      mesh.position.copy(wall.pos)
-      mesh.receiveShadow = true
-      group.add(mesh)
-    }
-
-    return group
-  }
-
-  private createRoomDivisions(template: HouseTemplate, rng: () => number): THREE.Group {
-    const group = new THREE.Group()
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0xe8dcc8, roughness: 0.9, side: THREE.DoubleSide })
+    const wallColor = this.getWallColor(variation.wallColorScheme, rng)
+    const wallMat = new THREE.MeshStandardMaterial({ color: wallColor, roughness: 0.9, side: THREE.DoubleSide })
     const height = template.floors > 1 ? 3 : 2.5
     const thickness = 0.1
 
-    // Add some internal walls based on template
-    if (template.name === 'terraced' || template.name === 'semi_detached') {
-      // Central dividing wall
-      const geom = new THREE.BoxGeometry(thickness, height, template.depth * 0.6)
+    if (!layout) return group
+
+    for (const connection of layout.connections) {
+      const roomA = rooms.find(r => r.name === connection.from)
+      const roomB = rooms.find(r => r.name === connection.to)
+      if (!roomA || !roomB) continue
+
+      const midX = (roomA.position.x + roomB.position.x) / 2
+      const midZ = (roomA.position.z + roomB.position.z) / 2
+      const dx = roomB.position.x - roomA.position.x
+      const dz = roomB.position.z - roomA.position.z
+
+      let geom: THREE.BoxGeometry
+      if (Math.abs(dx) > Math.abs(dz)) {
+        geom = new THREE.BoxGeometry(thickness, height, Math.min(roomA.depth, roomB.depth) * 0.8)
+        geom.translate(midX, height / 2, midZ)
+      } else {
+        geom = new THREE.BoxGeometry(Math.min(roomA.width, roomB.width) * 0.8, height, thickness)
+        geom.translate(midX, height / 2, midZ)
+      }
+
       const mesh = new THREE.Mesh(geom, wallMat)
-      mesh.position.set(0, height / 2, -template.depth * 0.1)
+      mesh.position.y = 0
       group.add(mesh)
     }
 
     return group
   }
 
-  private createStairs(template: HouseTemplate, rng: () => number): THREE.Group {
+  private createStairs(template: HouseTemplate, variation: HouseVariationData, stairs: HouseLayoutTemplate['stairs'], rng: () => number): THREE.Group {
     const group = new THREE.Group()
     const stepMat = new THREE.MeshStandardMaterial({ color: 0x8b7355, roughness: 0.8 })
     const stepCount = 12
     const stepHeight = 2.5 / stepCount
     const stepDepth = 0.25
-    const stepWidth = 0.9
+    const stepWidth = stairs?.width || 0.9
 
     for (let i = 0; i < stepCount; i++) {
       const geom = new THREE.BoxGeometry(stepWidth, stepHeight, stepDepth)
       const mesh = new THREE.Mesh(geom, stepMat)
-      mesh.position.set(-template.width / 2 + 1.5, i * stepHeight + stepHeight / 2, -template.depth / 2 + 1.5 + i * stepDepth)
+      mesh.position.set(
+        stairs?.x || -template.width / 2 + 1.5,
+        i * stepHeight + stepHeight / 2,
+        (stairs?.z || -template.depth / 2 + 1.5) + i * stepDepth
+      )
       mesh.castShadow = true
       mesh.receiveShadow = true
       group.add(mesh)
@@ -762,35 +390,25 @@ export class HouseGenerator {
   }
 
   private createLODMeshes(houseGroup: THREE.Group, template: HouseTemplate, house: HouseInstance): void {
-    // Create simplified LOD meshes for distance rendering
-    // LOD1: Simplified geometry (no windows/door details)
-    // LOD2: Imposter (billboard)
-
-    // For now, just add LOD levels to the main group
     const lod = new THREE.LOD()
 
-    // Level 0: Full detail (0-50m)
     lod.addLevel(houseGroup, 50)
 
-    // Level 1: Simplified (50-150m)
     const simplified = this.createSimplifiedMesh(template, house)
     lod.addLevel(simplified, 150)
 
-    // Level 2: Imposter (150-500m)
     const imposter = this.createImposterMesh(template, house)
     lod.addLevel(imposter, 500)
 
-    // Replace in scene
     this.sceneManager.scene.remove(houseGroup)
     lod.position.copy(houseGroup.position)
     lod.rotation.copy(houseGroup.rotation)
     lod.name = houseGroup.name
     this.sceneManager.scene.add(lod)
-    this.houseMeshes.set(house.id, lod as any)
+    this.houseMeshes.set(house.id, lod)
   }
 
   private createSimplifiedMesh(template: HouseTemplate, house: HouseInstance): THREE.Mesh {
-    // Simple box representation
     const geom = new THREE.BoxGeometry(template.width, template.height, template.depth)
     const mat = new THREE.MeshStandardMaterial({
       color: template.brickColor,
@@ -802,7 +420,6 @@ export class HouseGenerator {
   }
 
   private createImposterMesh(template: HouseTemplate, house: HouseInstance): THREE.Mesh {
-    // Billboard - always faces camera
     const geom = new THREE.PlaneGeometry(template.width, template.height)
     const mat = new THREE.MeshBasicMaterial({
       color: template.brickColor,
@@ -821,6 +438,8 @@ export class HouseGenerator {
       group.levels.forEach((l, i) => {
         l.object.visible = i === level
       })
+    } else if (group && !(group instanceof THREE.LOD)) {
+      group.visible = level <= 1
     }
   }
 
@@ -838,6 +457,12 @@ export class HouseGenerator {
       this.disposeGroup(interior)
       this.interiorMeshes.delete(house.id)
     }
+
+    const extData = this.exteriorData.get(house.id)
+    if (extData) {
+      disposeExterior(extData)
+      this.exteriorData.delete(house.id)
+    }
   }
 
   private disposeGroup(group: THREE.Object3D): void {
@@ -849,12 +474,13 @@ export class HouseGenerator {
         } else {
           child.material.dispose()
         }
+      } else if (child instanceof THREE.Light) {
+        child.dispose()
       }
     })
   }
 
   private createRNG(seed: number): () => number {
-    // Mulberry32
     let state = seed >>> 0
     return () => {
       state += 0x6D2B79F5
@@ -863,18 +489,39 @@ export class HouseGenerator {
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296
     }
   }
-}
 
-interface HouseTemplate {
-  name: string
-  width: number
-  depth: number
-  height: number
-  floors: number
-  roofType: 'pitched' | 'hipped' | 'thatched' | 'flat'
-  windowStyle: 'sash' | 'casement' | 'bay' | 'diamond'
-  doorStyle: 'panel' | 'upvc' | 'composite' | 'stable'
-  brickColor: number
-  roofColor: number
-  roomLayout: string
+  private getWallColor(scheme: HouseVariationData['wallColorScheme'], rng: () => number): number {
+    const baseColors: Record<HouseVariationData['wallColorScheme'], number[]> = {
+      neutral: [0xe8dcc8, 0xf0e8e0, 0xf5f0e8, 0xeae4d8],
+      warm: [0xf0d8c0, 0xe8c8a0, 0xf5e0c8, 0xfad8b8],
+      cool: [0xd8e8f0, 0xc8e0e8, 0xe0f0f5, 0xd0e8f0],
+      bold: [0x2c3e50, 0x1a5c2e, 0x8b1a1a, 0x2d2d2d],
+      period: [0xf0e8d8, 0xd8e8d0, 0xe8d0c8, 0xe0d8c8]
+    }
+    const colors = baseColors[scheme] || baseColors.neutral
+    return colors[Math.floor(rng() * colors.length)]
+  }
+
+  private getFloorColor(scheme: HouseVariationData['floorMaterialScheme'], rng: () => number): number {
+    const baseColors: Record<HouseVariationData['floorMaterialScheme'], number[]> = {
+      carpet: [0x8b7355, 0xa09078, 0x988870, 0x887860],
+      wood: [0x8b7355, 0x7a6858, 0x6b5a4a, 0x9a8a75],
+      tile: [0x8899aa, 0x9aaab8, 0xaaaacc, 0xbbcccc],
+      mixed: [0x8b7355, 0x8899aa, 0x9a8a75, 0x8899aa],
+      period: [0x7a6858, 0x8b7355, 0x6b5a4a, 0x9a8a75]
+    }
+    const colors = baseColors[scheme] || baseColors.carpet
+    return colors[Math.floor(rng() * colors.length)]
+  }
+
+  updateExteriorLighting(houseId: string, timeOfDay: number): void {
+    const exterior = this.exteriorData.get(houseId)
+    if (exterior) {
+      updateExteriorLighting(exterior, timeOfDay)
+    }
+  }
+
+  getExteriorData(houseId: string): GeneratedExterior | undefined {
+    return this.exteriorData.get(houseId)
+  }
 }
