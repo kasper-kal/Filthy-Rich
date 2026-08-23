@@ -1,6 +1,6 @@
 # Session Brief - Filthy Rich Open World Transformation
 
-**Last Updated:** 2026-08-23
+**Last Updated:** 2026-08-23 15:30
 **Current Phase:** Phase 5 (Integration & Polish) - Save System Overhaul COMPLETE
 **Branch:** main
 
@@ -47,19 +47,17 @@
 
 ## Active Threads
 
-1. **Worker Offloading** - Create terrainWorker.ts, houseWorker.ts, physicsWorker.ts
-2. **Texture Compression** - Add KTX2/BasisU pipeline
-3. **House Variety** - Add HouseTemplates.ts, HouseVariation.ts, ExteriorGenerator.ts
-4. **AI Traffic** - Add NavMesh.ts for AI traffic
+1. **Texture Compression** - Add KTX2/BasisU pipeline
+2. **House Variety** - Add HouseTemplates.ts, HouseVariation.ts, ExteriorGenerator.ts
+3. **AI Traffic** - Add NavMesh.ts for AI traffic
 
 ---
 
 ## Next Actions
 
-1. **Immediate:** Create worker files for off-main-thread computation (terrainWorker.ts, houseWorker.ts, physicsWorker.ts)
-2. **Short-term:** Add KTX2/BasisU texture compression pipeline
-3. **Medium-term:** Add HouseTemplates.ts, HouseVariation.ts, ExteriorGenerator.ts for more house variety
-4. **Medium-term:** Add NavMesh.ts for AI traffic
+1. **Immediate:** Add KTX2/BasisU texture compression pipeline
+2. **Short-term:** Add HouseTemplates.ts, HouseVariation.ts, ExteriorGenerator.ts for more house variety
+3. **Medium-term:** Add NavMesh.ts for AI traffic
 
 ---
 
@@ -72,7 +70,11 @@
 - `/workspaces/game/src/systems/SaveSystem.ts` - COMPLETE REWRITE: Full world state serialization schema v2
 - `/workspaces/game/src/vehicle/BreakdownSystem.ts` - Added `restoreBreakdown()` method
 - `/workspaces/game/src/game/Game.ts` - Updated initialization order for SaveSystem
-- `/workspaces/game/vite.config.ts` - Added manualChunks for code splitting
+- `/workspaces/game/vite.config.ts` - Added manualChunks for code splitting (including workers chunk)
+- `/workspaces/game/package.json` - Added comlink dependency
+- `/workspaces/game/src/workers/terrainWorker.ts` - NEW: Off-main-thread terrain generation with Simplex noise
+- `/workspaces/game/src/workers/houseWorker.ts` - NEW: Off-main-thread house assembly with 5 templates
+- `/workspaces/game/src/workers/physicsWorker.ts` - NEW: Off-main-thread vehicle physics (raycast suspension, Pacejka tires, drivetrain)
 - `/workspaces/game/.gitignore` - Proper gitignore
 - `/workspaces/game/PHASES.md` - Created/updated master roadmap
 - `/workspaces/game/session-brief.md` - Created/updated session tracking

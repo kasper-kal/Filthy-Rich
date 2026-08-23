@@ -94,9 +94,9 @@
 - [x] Discovered houses, completed jobs, reputation per area
 - [x] Garage inventory (parts, tools)
 
-### 5.3 Performance Budget (Web) (PENDING)
-- [ ] Dynamic imports/code-splitting for <500KB chunks
-- [ ] Worker offloading (terrainWorker, houseWorker, physicsWorker)
+### 5.3 Performance Budget (Web) (IN PROGRESS)
+- [x] Dynamic imports/code-splitting for <500KB chunks
+- [x] Worker offloading (terrainWorker, houseWorker, physicsWorker)
 - [ ] KTX2/BasisU texture compression pipeline
 - [ ] Memory profiling and optimization
 
@@ -111,8 +111,7 @@
 ---
 
 ## Next Actions
-1. Add Vite manualChunks for code-splitting (DONE - all chunks under 600KB)
-2. Create worker files for off-main-thread computation (terrainWorker, houseWorker, physicsWorker)
-3. Add KTX2/BasisU texture compression support
-4. Add HouseTemplates.ts, HouseVariation.ts, ExteriorGenerator.ts for more house variety
-5. Add NavMesh.ts for AI traffic
+1. Add KTX2/BasisU texture compression support
+2. Add HouseTemplates.ts, HouseVariation.ts, ExteriorGenerator.ts for more house variety
+3. Add NavMesh.ts for AI traffic
+4. Memory profiling and optimization
