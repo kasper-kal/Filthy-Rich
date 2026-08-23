@@ -499,6 +499,41 @@ export class BreakdownSystem {
     return this.vehicleState.get(vehicleId)?.fuelLevel ?? 0
   }
 
+  /**
+   * Restore breakdown state from save data
+   */
+  restoreBreakdown(vehicleId: string, data: { subsystem: string; severity: 'minor' | 'major' | 'critical' }): void {
+    const state = this.vehicleState.get(vehicleId)
+    if (!state) return
+
+    // Find the hazard for this subsystem
+    const hazard = this.hazards.find(h => h.subsystem === data.subsystem)
+    if (!hazard) return
+
+    const event: BreakdownEvent = {
+      id: `bd_${Date.now()}_${vehicleId}`,
+      vehicleId,
+      timestamp: Date.now(),
+      position: new THREE.Vector3(),
+      severity: data.severity,
+      subsystem: data.subsystem as any,
+      cause: 'wear',
+      isRoadside: true,
+      recoveryRequired: hazard.recoveryRequired,
+      description: hazard.description(0.5),
+      symptoms: hazard.symptoms,
+      warningLights: hazard.warningLights,
+      canDrive: hazard.canDrive,
+      mobileRepairPossible: hazard.mobileRepair,
+      estimatedRepairTime: hazard.estimatedTime,
+      repairCost: Math.round(hazard.estimatedTime * (hazard.recoveryRequired ? 1.5 : 0.8)),
+      narrated: false
+    }
+
+    this.activeBreakdowns.set(vehicleId, event)
+    this.onBreakdown?.(event)
+  }
+
   setDifficulty(multiplier: number): void {
     this.difficultyMultiplier = multiplier
   }

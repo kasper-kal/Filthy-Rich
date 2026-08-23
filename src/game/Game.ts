@@ -91,7 +91,6 @@ export class Game {
     this.furnitureManager = new FurnitureManager(this.sceneManager.scene)
     await this.furnitureManager.init()
     this.narrator = new Narrator()
-    this.saveSystem = new SaveSystem(this.economySystem, this.cleaningSystem, this.sceneManager, this.furnitureManager)
     this.jobSystem = new JobSystem()
     this.hud = new DiegeticHUD(this.sceneManager.scene, this.sceneManager.camera, this.cleaningSystem)
     this.shopSystem = new ShopSystem(this.sceneManager, this.economySystem, this.furnitureManager, this.hud)
@@ -130,6 +129,24 @@ export class Game {
       this.sceneManager.camera,
       {}, // config
       {} // callbacks
+    )
+
+    // Initialize SaveSystem LAST after all dependencies are ready
+    this.saveSystem = new SaveSystem(
+      this.economySystem,
+      this.cleaningSystem,
+      this.sceneManager,
+      this.furnitureManager,
+      this.worldStreamer,
+      this.vehicle,
+      this.damageModel,
+      this.breakdownSystem,
+      this.garageNetwork,
+      this.partsManager,
+      this.toolkit,
+      this.repairBayManager,
+      this.recoverySystem,
+      this.jobSystem
     )
 
     await this.saveSystem.load()
