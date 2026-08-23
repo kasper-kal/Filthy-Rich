@@ -4,6 +4,7 @@ import { HouseGenerator, HouseInstance } from './HouseGenerator.js'
 import { ChunkManager } from './ChunkManager.js'
 import { TerrainSystem } from './TerrainSystem.js'
 import { RoadNetwork } from './RoadNetwork.js'
+import { AssetStreamer } from './AssetStreamer.js'
 
 export class WorldStreamer {
   private sceneManager: SceneManager
@@ -12,6 +13,7 @@ export class WorldStreamer {
   private terrainSystem: TerrainSystem
   private roadNetwork: RoadNetwork
   private houseGenerator: HouseGenerator
+  private assetStreamer: AssetStreamer
 
   private loadedHouses: Map<string, HouseInstance> = new Map()
   private worldSeed: number
@@ -47,9 +49,13 @@ export class WorldStreamer {
     this.terrainSystem = new TerrainSystem(this.sceneManager, this.worldSeed, this.worldSize)
     this.roadNetwork = new RoadNetwork(this.sceneManager, this.worldSeed, this.worldSize)
     this.houseGenerator = new HouseGenerator(this.sceneManager, this.worldSeed)
+    this.assetStreamer = new AssetStreamer()
   }
 
   async init(): Promise<void> {
+    // Initialize asset streamer with renderer
+    await this.assetStreamer.init(this.renderer)
+
     // Initialize terrain
     await this.terrainSystem.init()
 
@@ -293,6 +299,7 @@ export class WorldStreamer {
   getTerrainSystem(): TerrainSystem { return this.terrainSystem }
   getRoadNetwork(): RoadNetwork { return this.roadNetwork }
   getHouseGenerator(): HouseGenerator { return this.houseGenerator }
+  getAssetStreamer(): AssetStreamer { return this.assetStreamer }
 
   serialize(): any {
     return {

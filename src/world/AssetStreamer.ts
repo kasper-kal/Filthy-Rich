@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
+import { TextureCompressionManager, CompressedTextureOptions } from '../systems/TextureCompression.js'
 
 /**
  * AssetStreamer - Priority-based asset loading with memory budget management
@@ -84,6 +85,9 @@ export class AssetStreamer {
   private audioLoader: THREE.AudioLoader
   private fileLoader: THREE.FileLoader
 
+  // Texture compression manager
+  private compressionManager: TextureCompressionManager | null = null
+
   // Callbacks
   onAssetLoaded?: (asset: LoadedAsset) => void
   onAssetUnloaded?: (assetId: string) => void
@@ -100,7 +104,7 @@ export class AssetStreamer {
   /**
    * Initialize loaders (must be called after Three.js is ready)
    */
-  async init(): Promise<void> {
+  async init(renderer: THREE.WebGLRenderer): Promise<void> {
     if (this.loadersInitialized) return
 
     this.gltfLoader = new GLTFLoader()
@@ -112,6 +116,10 @@ export class AssetStreamer {
       this.ktx2Loader.setTranscoderPath(this.config.ktx2TranscoderPath)
       // KTX2Loader will auto-detect GPU on first load
     }
+
+    // Initialize texture compression manager
+    this.compressionManager = new TextureCompressionManager(renderer)
+    await this.compressionManager.ready()
 
     this.loadersInitialized = true
   }
@@ -242,7 +250,16 @@ export class AssetStreamer {
         size = this.estimateTextureSize(data)
         break
       case 'ktx2':
-        data = await this.loadKTX2(url, options)
+        if (this.compressionManager) {
+          data = await this.compressionManager.loadTexture({
+            url,
+            fallbackUrl: options?.colorSpace ? undefined : url.replace('.ktx2', '.jpg'),
+            generateMipmaps: options?.generateMipmaps,
+            colorSpace: options?.colorSpace,
+          })
+        } else {
+          data = await this.loadKTX2(url, options)
+        }
         size = this.estimateTextureSize(data)
         break
       case 'audio':
@@ -348,7 +365,7 @@ export class AssetStreamer {
   }
 
   /**
-   * Load KTX2 compressed texture
+   * Load KTX2 compressed texture (legacy path)
    */
   private loadKTX2(url: string, options?: AssetLoadOptions): Promise<THREE.CompressedTexture> {
     return new Promise((resolve, reject) => {
@@ -684,6 +701,9 @@ export class AssetStreamer {
     }
     if (this.ktx2Loader) {
       this.ktx2Loader.dispose()
+    }
+    if (this.compressionManager) {
+      this.compressionManager.dispose()
     }
   }
 }

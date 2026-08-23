@@ -1,6 +1,6 @@
 # Session Brief - Filthy Rich Open World Transformation
 
-**Last Updated:** 2026-08-23 16:45
+**Last Updated:** 2026-08-23 17:30
 **Current Phase:** Phase 5 (Integration & Polish) - Save System Overhaul COMPLETE
 **Branch:** main
 
@@ -25,7 +25,14 @@
 
 ## Change Record (Newest First)
 
-1. **2026-08-23** - Fixed all TypeScript errors across codebase:
+1. **2026-08-23** - Integrated TextureCompressionManager with AssetStreamer:
+   - Updated `AssetStreamer.ts` to use `TextureCompressionManager` for KTX2/BasisU texture loading
+   - Added `init(renderer)` method to AssetStreamer for proper loader initialization
+   - Updated `WorldStreamer.ts` to initialize AssetStreamer with renderer
+   - Added `textures` chunk in Vite build output (59KB gzipped)
+   - Build passes with zero TypeScript errors
+
+2. **2026-08-23** - Fixed all TypeScript errors across codebase:
    - Fixed `TextureCompression.ts`: Changed `ErrorEvent` to `unknown` in error callbacks for `loadKTX2` and `loadFallback` methods (Three.js r165 type compatibility)
    - Fixed `HouseGenerator.ts`: Exported `HouseInstance` interface, fixed `mergeGeometries` import, scoped `roofHeight`, fixed `createWheelieBin` return type, fixed `setLOD` LOD check
    - Fixed `ImposterSystem.ts`: Added `mergeGeometries` import, fixed `templateId` → `template`, fixed return types for `addHouseImposter`/`addChunkImposter`
@@ -33,22 +40,22 @@
    - Fixed `TerrainSystem.ts`: Added null checks for `heightMap` in `createTerrainMesh` and `createLODMeshes`
    - Build now passes with zero errors
 
-2. **2026-08-23** - Completed SaveSystem overhaul:
+3. **2026-08-23** - Completed SaveSystem overhaul:
    - Rewrote `SaveSystem.ts` with full world state serialization schema (version 2)
    - Added `BreakdownSystem.restoreBreakdown()` method for save/restore
    - Fixed `SaveSystem.serializePlayer()` to use `JobSystem.getReputation()` object correctly
    - Updated `Game.ts` initialization order to pass all 14 dependencies to SaveSystem
    - Added Vite `manualChunks` for code splitting (all chunks under 600KB)
 
-3. **2026-08-23** - Created PHASES.md master roadmap with all phases and completion status
+4. **2026-08-23** - Created PHASES.md master roadmap with all phases and completion status
 
-4. **2026-08-23** - Created session-brief.md for live project state tracking
+5. **2026-08-23** - Created session-brief.md for live project state tracking
 
 ---
 
 ## Active Threads
 
-1. **Texture Compression** - Add KTX2/BasisU pipeline
+1. **Texture Compression** - Add KTX2/BasisU pipeline (IN PROGRESS - AssetStreamer integration complete)
 2. **House Variety** - Add HouseTemplates.ts, HouseVariation.ts, ExteriorGenerator.ts
 3. **AI Traffic** - Add NavMesh.ts for AI traffic
 
@@ -56,7 +63,7 @@
 
 ## Next Actions
 
-1. **Immediate:** Add KTX2/BasisU texture compression pipeline
+1. **Immediate:** Add KTX2/BasisU texture compression pipeline (remaining: build-time basisu config, texture generation)
 2. **Short-term:** Add HouseTemplates.ts, HouseVariation.ts, ExteriorGenerator.ts for more house variety
 3. **Medium-term:** Add NavMesh.ts for AI traffic
 
@@ -64,14 +71,17 @@
 
 ## Key Files Modified This Session
 
+- `/workspaces/game/src/world/AssetStreamer.ts` - Integrated TextureCompressionManager for KTX2/BasisU loading
+- `/workspaces/game/src/world/WorldStreamer.ts` - Added AssetStreamer initialization with renderer
 - `/workspaces/game/src/world/HouseGenerator.ts` - Fixed exports and TypeScript issues
 - `/workspaces/game/src/world/ImposterSystem.ts` - Fixed imports and return types
 - `/workspaces/game/src/world/RoadNetwork.ts` - Fixed unreachable type comparisons
 - `/workspaces/game/src/world/TerrainSystem.ts` - Fixed null checks
+- `/workspaces/game/src/systems/TextureCompression.ts` - Fixed ErrorEvent type errors
 - `/workspaces/game/src/systems/SaveSystem.ts` - COMPLETE REWRITE: Full world state serialization schema v2
 - `/workspaces/game/src/vehicle/BreakdownSystem.ts` - Added `restoreBreakdown()` method
 - `/workspaces/game/src/game/Game.ts` - Updated initialization order for SaveSystem
-- `/workspaces/game/vite.config.ts` - Added manualChunks for code splitting (including workers chunk)
+- `/workspaces/game/vite.config.ts` - Added manualChunks for code splitting (including textures chunk)
 - `/workspaces/game/package.json` - Added comlink dependency
 - `/workspaces/game/src/workers/terrainWorker.ts` - NEW: Off-main-thread terrain generation with Simplex noise
 - `/workspaces/game/src/workers/houseWorker.ts` - NEW: Off-main-thread house assembly with 5 templates
