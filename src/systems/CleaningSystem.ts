@@ -275,7 +275,7 @@ export class CleaningSystem {
 
   private updateCircularMotion(): void {
     // Track mouse movement in screen space for circular motion detection
-    const mouse = this.sceneManager.mouse;
+    const mouse = this.sceneManager.getMouse();
     const currentPos = new THREE.Vector2(mouse.x, mouse.y);
 
     if (this.scrubState.circularMotion === 0) {

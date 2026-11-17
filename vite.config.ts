@@ -74,5 +74,9 @@ export default defineConfig({
     port: 5173,
     host: true,
     open: true,
+    // Hosted previews serve the dev server through a per-session hostname.
+    // Read it from the environment so no machine-specific host is hardcoded;
+    // when unset the default localhost-only allowlist applies.
+    allowedHosts: process.env['PREVIEW_HOST'] ? [process.env['PREVIEW_HOST']] : [],
   },
 })

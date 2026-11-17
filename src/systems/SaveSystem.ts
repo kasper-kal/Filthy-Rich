@@ -381,13 +381,7 @@ export class SaveSystem {
 
   private serializeWorld(): WorldSaveData {
     // Get discovered houses from world streamer
-    const discoveredHouses: string[] = [];
-    const loadedHouses = this.worldStreamer.loadedHouses; // private access
-    if (loadedHouses) {
-      for (const house of loadedHouses.values()) {
-        discoveredHouses.push(house.id);
-      }
-    }
+    const discoveredHouses: string[] = this.worldStreamer.getLoadedHouseIds();
 
     // Get completed jobs from job system
     const completedJobs: JobRecord[] = [];
@@ -537,8 +531,7 @@ export class SaveSystem {
     }
 
     // Restore fuel and odometer
-    this.vehicle.fuelLevel = data.fuelLevel || 1;
-    this.vehicle.odometer = data.odometer || 0;
+    this.vehicle.restoreFuelAndOdometer(data.fuelLevel || 1, data.odometer || 0);
     this.vehicle.setEngineRunning(data.engineRunning || false);
 
     // Restore damage model
@@ -636,7 +629,7 @@ export class SaveSystem {
 
     // Restore owned garage
     if (data.ownedGarageId) {
-      this.garageNetwork.playerGarageId = data.ownedGarageId;
+      this.garageNetwork.setOwnedGarage(data.ownedGarageId);
     }
   }
 

@@ -388,6 +388,11 @@ export class WorldStreamer {
     return this.aiTrafficManager;
   }
 
+  /** IDs of every house currently streamed in, for save-game bookkeeping. */
+  getLoadedHouseIds(): string[] {
+    return Array.from(this.loadedHouses.keys());
+  }
+
   serialize(): any {
     return {
       worldSeed: this.worldSeed,

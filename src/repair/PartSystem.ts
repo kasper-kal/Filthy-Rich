@@ -379,6 +379,13 @@ export class PartsManager {
   }
 
   /**
+   * Read-only access to the part catalogue (used by the shop UI).
+   */
+  getCatalogue(): PartCatalogue {
+    return this.catalogue;
+  }
+
+  /**
    * Check if player has all required tools
    */
   checkToolsAvailable(
@@ -481,8 +488,8 @@ export class PartsShop {
   getShopItems(category?: SubsystemName, condition?: PartCondition): ShopItem[] {
     const items: ShopItem[] = [];
     const catalogueParts = category
-      ? this.partsManager.catalogue.getPartsForSubsystem(category)
-      : this.partsManager.catalogue.getAllParts();
+      ? this.partsManager.getCatalogue().getPartsForSubsystem(category)
+      : this.partsManager.getCatalogue().getAllParts();
 
     for (const part of catalogueParts) {
       const conditions: PartCondition[] = condition ? [condition] : ['new', 'refurbished', 'used'];
@@ -491,14 +498,14 @@ export class PartsShop {
         if (cond === 'new' && part.stock === 0) continue;
 
         const deal = this.dailyDeals.get(part.id);
-        const price = Math.round(part.priceNew * this.partsManager.conditionPriceMultipliers[cond]);
+        const price = Math.round(part.priceNew * this.partsManager.getConditionPriceMultiplier(cond));
         const discountedPrice = deal ? Math.round(price * (1 - deal.discount)) : price;
 
         items.push({
           part,
           condition: cond,
           price: discountedPrice,
-          reliability: this.partsManager.conditionReliabilityMultipliers[cond],
+          reliability: this.partsManager.getConditionReliabilityMultiplier(cond),
           inStock: cond !== 'new' || part.stock > 0,
           stockCount: cond === 'new' ? part.stock : 999,
           isDiscounted: !!deal,

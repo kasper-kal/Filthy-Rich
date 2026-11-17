@@ -674,7 +674,7 @@ export class Game {
 
     if (this.furnitureManager.isInPlacementMode()) {
       const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(this.sceneManager.mouse, this.sceneManager.camera);
+      raycaster.setFromCamera(this.sceneManager.getMouse(), this.sceneManager.camera);
       this.furnitureManager.updatePlacement(raycaster, this.sceneManager.camera);
       return;
     }

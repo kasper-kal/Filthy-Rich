@@ -243,6 +243,11 @@ export class GarageNetwork {
     return this.repairBayManager.getGarage(this.playerGarageId) || null;
   }
 
+  /** Restore the garage the player owns when loading a save. */
+  setOwnedGarage(garageId: string | null): void {
+    this.playerGarageId = garageId;
+  }
+
   /**
    * Get player garage as PlayerGarage with staff/bays
    */

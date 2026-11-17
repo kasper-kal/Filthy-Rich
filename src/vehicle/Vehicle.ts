@@ -314,6 +314,12 @@ export class Vehicle {
     return this.odometer;
   }
 
+  /** Restore persisted fuel/odometer values, clamped to sane ranges. */
+  restoreFuelAndOdometer(fuelLevel: number, odometer: number): void {
+    this.fuelLevel = Math.max(0, Math.min(1, fuelLevel));
+    this.odometer = Math.max(0, odometer);
+  }
+
   setControllable(controllable: boolean): void {
     this.controllable = controllable;
   }

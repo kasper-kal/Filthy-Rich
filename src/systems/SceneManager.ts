@@ -140,6 +140,11 @@ export class SceneManager {
     return this.raycaster;
   }
 
+  /** Normalised device coordinates of the pointer, updated by setMouseFromEvent(). */
+  getMouse(): THREE.Vector2 {
+    return this.mouse;
+  }
+
   // Camera controller accessors
   getCameraPosition(): THREE.Vector3 {
     return this.cameraController.getCameraPosition();
