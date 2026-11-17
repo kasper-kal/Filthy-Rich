@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Filthy Rich lockup with sponge mark">
+  <title>Filthy Rich — mark and name</title>
+  <defs>
+    <path id="d-F" d="M 5 5 V 35 M 5 5 H 25 M 5 20 H 21"/>
+    <path id="d-I" d="M 15 5 V 35"/>
+    <path id="d-L" d="M 5 5 V 35 H 25"/>
+    <path id="d-T" d="M 0 5 H 30 M 15 5 V 35"/>
+    <path id="d-H" d="M 5 5 V 35 M 25 5 V 35 M 5 20 H 25"/>
+    <path id="d-Y" d="M 5 5 L 15 20 L 25 5 M 15 20 V 35"/>
+    <path id="d-R" d="M 5 35 V 5 H 17 A 8 8 0 0 1 17 21 H 5 M 17 21 L 26 35"/>
+    <path id="d-C" d="M 25 12 A 12 12 0 1 0 25 28"/>
+  </defs>
+
+  <rect width="256" height="256" rx="40" fill="#0b0b0e"/>
+
+  <!-- mark, scaled to sit above the name -->
+  <g transform="translate(69.5 60) scale(0.68) translate(-42 -60)">
+    <path d="M 70 66 H 186 A 22 22 0 0 1 208 88 V 168 A 22 22 0 0 1 186 190 H 70 A 22 22 0 0 1 48 168 V 88 A 22 22 0 0 1 70 66 Z"
+          fill="#5a4d38"/>
+    <g fill="#201b14">
+      <circle cx="72" cy="96" r="8"/>
+      <circle cx="104" cy="86" r="5"/>
+      <circle cx="188" cy="98" r="6"/>
+      <circle cx="64" cy="146" r="6"/>
+      <circle cx="98" cy="172" r="8"/>
+      <circle cx="190" cy="162" r="7"/>
+    </g>
+    <g transform="translate(26.2 30) scale(0.8)">
+      <g fill="none" stroke="#f2c14e" stroke-width="18">
+        <path d="M 149 96 A 23 23 0 0 0 103 96 C 103 119 149 123 149 146 A 23 23 0 0 1 103 146"/>
+      </g>
+      <rect x="117" y="60" width="18" height="122" fill="#f2c14e"/>
+    </g>
+  </g>
+
+  <!-- name on one line, same alphabet at half scale -->
+  <g transform="translate(35 176) scale(0.5)">
+    <g fill="none" stroke="#8a7a60" stroke-width="10" stroke-linecap="square" stroke-linejoin="miter">
+      <use href="#d-F" x="0" y="0"/>
+      <use href="#d-I" x="35" y="0"/>
+      <use href="#d-L" x="70" y="0"/>
+      <use href="#d-T" x="105" y="0"/>
+      <use href="#d-H" x="140" y="0"/>
+      <use href="#d-Y" x="175" y="0"/>
+    </g>
+    <g fill="none" stroke="#f2c14e" stroke-width="10" stroke-linecap="square" stroke-linejoin="miter">
+      <use href="#d-R" x="230" y="0"/>
+      <use href="#d-I" x="265" y="0"/>
+      <use href="#d-C" x="300" y="0"/>
+      <use href="#d-H" x="335" y="0"/>
+    </g>
+  </g>
+</svg>

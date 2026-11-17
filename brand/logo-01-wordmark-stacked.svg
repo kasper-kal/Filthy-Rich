@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Filthy Rich wordmark">
+  <title>Filthy Rich — stacked wordmark</title>
+  <defs>
+    <!-- one monoline alphabet: 30 wide, 40 cap height, 10 stroke, square terminals -->
+    <path id="c-F" d="M 5 5 V 35 M 5 5 H 25 M 5 20 H 21"/>
+    <path id="c-I" d="M 15 5 V 35"/>
+    <path id="c-L" d="M 5 5 V 35 H 25"/>
+    <path id="c-T" d="M 0 5 H 30 M 15 5 V 35"/>
+    <path id="c-H" d="M 5 5 V 35 M 25 5 V 35 M 5 20 H 25"/>
+    <path id="c-Y" d="M 5 5 L 15 20 L 25 5 M 15 20 V 35"/>
+    <path id="c-R" d="M 5 35 V 5 H 17 A 8 8 0 0 1 17 21 H 5 M 17 21 L 26 35"/>
+    <path id="c-C" d="M 25 12 A 12 12 0 1 0 25 28"/>
+  </defs>
+
+  <rect width="256" height="256" rx="40" fill="#0b0b0e"/>
+
+  <!-- FILTHY: the state you start in -->
+  <g fill="none" stroke="#8a7a60" stroke-width="10" stroke-linecap="square" stroke-linejoin="miter">
+    <use href="#c-F" x="25" y="78"/>
+    <use href="#c-I" x="60" y="78"/>
+    <use href="#c-L" x="95" y="78"/>
+    <use href="#c-T" x="130" y="78"/>
+    <use href="#c-H" x="165" y="78"/>
+    <use href="#c-Y" x="200" y="78"/>
+  </g>
+
+  <!-- RICH: what you get for it -->
+  <g fill="none" stroke="#f2c14e" stroke-width="10" stroke-linecap="square" stroke-linejoin="miter">
+    <use href="#c-R" x="60" y="140"/>
+    <use href="#c-I" x="95" y="140"/>
+    <use href="#c-C" x="130" y="140"/>
+    <use href="#c-H" x="165" y="140"/>
+  </g>
+</svg>
