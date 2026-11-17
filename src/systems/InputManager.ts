@@ -27,6 +27,8 @@ export class InputManager {
   private element: HTMLElement;
   private keys = new Set<string>();
   private mouseButtons = new Set<number>();
+  // Touch driving input, zeroed on desktop.
+  private touchInput = { throttle: 0, brake: 0, steer: 0, handbrake: false };
 
   constructor(element: HTMLElement) {
     this.element = element;
@@ -77,14 +79,23 @@ export class InputManager {
     this.onWheel?.(event);
   }
 
+  /** Feed the on-screen stick into the vehicle controls. */
+  setTouchInput(input: Partial<{ throttle: number; brake: number; steer: number; handbrake: boolean }>): void {
+    this.touchInput = { ...this.touchInput, ...input };
+  }
+
   getInputState(): InputState {
+    const keyboardThrottle = this.keys.has('KeyW') || this.keys.has('ArrowUp') ? 1 : 0;
+    const keyboardBrake = this.keys.has('KeyS') || this.keys.has('ArrowDown') ? 1 : 0;
+    const keyboardSteer =
+      (this.keys.has('KeyD') || this.keys.has('ArrowRight') ? 1 : 0) -
+      (this.keys.has('KeyA') || this.keys.has('ArrowLeft') ? 1 : 0);
+
     return {
-      throttle: this.keys.has('KeyW') ? 1 : this.keys.has('ArrowUp') ? 1 : 0,
-      brake: this.keys.has('KeyS') ? 1 : this.keys.has('ArrowDown') ? 1 : 0,
-      steer:
-        (this.keys.has('KeyD') || this.keys.has('ArrowRight') ? 1 : 0) -
-        (this.keys.has('KeyA') || this.keys.has('ArrowLeft') ? 1 : 0),
-      handbrake: this.keys.has('Space'),
+      throttle: Math.max(keyboardThrottle, this.touchInput.throttle),
+      brake: Math.max(keyboardBrake, this.touchInput.brake),
+      steer: Math.max(-1, Math.min(1, keyboardSteer + this.touchInput.steer)),
+      handbrake: this.keys.has('Space') || this.touchInput.handbrake,
       keyW: this.keys.has('KeyW'),
       keyA: this.keys.has('KeyA'),
       keyS: this.keys.has('KeyS'),

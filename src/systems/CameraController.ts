@@ -27,6 +27,10 @@ export class CameraController {
   };
   private pointerLocked = false;
 
+  // Touch thumbstick, -1..1. Stays at zero on desktop, so keyboard movement
+  // behaves exactly as before.
+  private moveAxis = new THREE.Vector2();
+
   // Camera effects
   private bobTime = 0;
   private bobAmount = 0.02;
@@ -64,6 +68,30 @@ export class CameraController {
 
   setBounds(bounds: { minX: number; maxX: number; minZ: number; maxZ: number }): void {
     this.bounds = bounds;
+  }
+
+  /**
+   * Analogue movement from the touch stick. x = right, y = screen-down
+   * (so pushing the stick up walks forward).
+   */
+  setMoveAxis(x: number, y: number): void {
+    this.moveAxis.set(THREE.MathUtils.clamp(x, -1, 1), THREE.MathUtils.clamp(y, -1, 1));
+    if (this.moveAxis.lengthSq() > 1) this.moveAxis.normalize();
+  }
+
+  /**
+   * Look-by-drag, in pixels. Desktop drives the same values through pointer
+   * lock; phones use this because pointer lock isn't available there.
+   */
+  addLookDelta(dx: number, dy: number): void {
+    const sensitivity = 0.002;
+    this.targetYaw -= dx * sensitivity;
+    this.targetPitch -= dy * sensitivity;
+    this.targetPitch = THREE.MathUtils.clamp(
+      this.targetPitch,
+      -Math.PI / 2 + 0.01,
+      Math.PI / 2 - 0.01
+    );
   }
 
   private setupInput(canvas: HTMLCanvasElement): void {
@@ -188,6 +216,9 @@ export class CameraController {
     if (this.keys.backward) this.direction.z += 1;
     if (this.keys.left) this.direction.x -= 1;
     if (this.keys.right) this.direction.x += 1;
+    // Analogue stick input (zero on desktop)
+    this.direction.x += this.moveAxis.x;
+    this.direction.z += this.moveAxis.y;
     this.direction.normalize();
 
     // Apply yaw rotation to movement

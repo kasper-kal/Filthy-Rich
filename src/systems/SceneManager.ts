@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Room } from './Room.js';
 import { FurnitureManager } from './FurnitureManager.js';
 import { CameraController } from './CameraController.js';
+import { DEVICE } from './DeviceProfile.js';
 
 export class SceneManager {
   public scene!: THREE.Scene;
@@ -47,9 +48,10 @@ export class SceneManager {
     // Main sun - warm, directional
     const sun = new THREE.DirectionalLight(0xfff0d8, 2.0);
     sun.position.set(8, 18, 10);
-    sun.castShadow = true;
-    sun.shadow.mapSize.width = 4096;
-    sun.shadow.mapSize.height = 4096;
+    // Phones get no shadows at all; 4K shadow maps wreck mobile GPUs.
+    sun.castShadow = DEVICE.enableShadows;
+    sun.shadow.mapSize.width = DEVICE.shadowMapSize;
+    sun.shadow.mapSize.height = DEVICE.shadowMapSize;
     sun.shadow.camera.near = 0.5;
     sun.shadow.camera.far = 50;
     sun.shadow.camera.left = -20;

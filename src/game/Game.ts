@@ -17,6 +17,8 @@ import { PostProcessing } from '../systems/PostProcessing.js';
 import type { MemoryProfiler } from '../systems/MemoryProfiler.js';
 import { memoryProfiler, performanceMonitor } from '../systems/MemoryProfiler.js';
 import { DebugOverlay } from '../systems/DebugOverlay.js';
+import { DEVICE } from '../systems/DeviceProfile.js';
+import { TouchControls } from '../systems/TouchControls.js';
 import { WorldStreamer } from '../world/WorldStreamer.js';
 import { Vehicle, VehicleType } from '../vehicle/Vehicle.js';
 import { VehicleSpecs, VehicleSpecsData } from '../vehicle/VehicleSpecs.js';
@@ -55,6 +57,9 @@ export class Game {
   private hud!: DiegeticHUD;
   private postProcessing!: PostProcessing;
   private debugOverlay!: DebugOverlay;
+
+  // Only ever created on phones/tablets.
+  private touchControls: TouchControls | null = null;
 
   // World & Vehicle systems
   private worldStreamer!: WorldStreamer;
@@ -256,6 +261,9 @@ export class Game {
 
     // Input bindings
     this.bindInputs();
+
+    // Phones get on-screen controls; desktop never instantiates these.
+    if (DEVICE.isMobile) this.setupTouchControls();
 
     // Listen for cleaning events to trigger audio/haptics
     window.addEventListener('stain-cleaned', () => {
@@ -1037,13 +1045,15 @@ export class Game {
 
   private setupRenderer(): void {
     this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
+      // Mobile relies on the reduced graphics profile in DeviceProfile instead
+      // of MSAA, shadows and the post-processing chain.
+      antialias: !DEVICE.isMobile,
       alpha: false,
-      powerPreference: 'high-performance',
+      powerPreference: DEVICE.isMobile ? 'default' : 'high-performance',
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, DEVICE.maxPixelRatio));
+    this.renderer.shadowMap.enabled = DEVICE.enableShadows;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
@@ -1067,9 +1077,30 @@ export class Game {
     this.postProcessing.setFilmEnabled(true);
   }
 
+  /**
+   * Phones only: on-screen stick for walking/driving, drag-to-look, and buttons
+   * for the actions already bound to the keyboard and mouse.
+   */
+  private setupTouchControls(): void {
+    this.touchControls = new TouchControls({
+      onMove: (x: number, y: number) => {
+        this.sceneManager.cameraController.setMoveAxis(x, y);
+        // The same stick drives the car: push up to accelerate, pull down to brake.
+        this.inputManager.setTouchInput({
+          throttle: Math.max(0, -y),
+          brake: Math.max(0, y),
+          steer: x,
+        });
+      },
+      onLook: (dx: number, dy: number) => {
+        this.sceneManager.cameraController.addLookDelta(dx, dy);
+      },
+    });
+  }
+
   private onResize(): void {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, DEVICE.maxPixelRatio));
     this.sceneManager.onResize(window.innerWidth, window.innerHeight);
     this.postProcessing.onResize(window.innerWidth, window.innerHeight);
     this.hud.onResize(window.innerWidth, window.innerHeight);

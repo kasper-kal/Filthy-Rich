@@ -6,6 +6,7 @@ import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { FilmPass } from 'three/examples/jsm/postprocessing/FilmPass.js';
+import { DEVICE } from './DeviceProfile.js';
 
 const FXAAShader = {
   uniforms: {
@@ -82,6 +83,13 @@ export class PostProcessing {
     film: false,
   };
 
+  /**
+   * On phones the whole effect chain (SSAO + bloom + FXAA + film) is skipped:
+   * it costs several full-screen render targets per frame and is the single
+   * biggest cause of the game freezing there.
+   */
+  private readonly bypass: boolean = !DEVICE.enablePostProcessing;
+
   constructor(
     private renderer: THREE.WebGLRenderer,
     private scene: THREE.Scene,
@@ -91,6 +99,8 @@ export class PostProcessing {
   }
 
   private init(): void {
+    if (this.bypass) return;
+
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
 
@@ -127,10 +137,15 @@ export class PostProcessing {
   }
 
   render(delta: number): void {
+    if (this.bypass) {
+      this.renderer.render(this.scene, this.camera);
+      return;
+    }
     this.composer.render(delta);
   }
 
   onResize(width: number, height: number): void {
+    if (this.bypass) return;
     this.composer.setSize(width, height);
     this.ssaoPass.setSize(width, height);
     this.bloomPass.setSize(width, height);
@@ -140,49 +155,49 @@ export class PostProcessing {
 
   setBloomEnabled(enabled: boolean): void {
     this.enabled.bloom = enabled;
-    this.bloomPass.enabled = enabled;
+    if (this.bloomPass) this.bloomPass.enabled = enabled;
   }
 
   setSSAOEnabled(enabled: boolean): void {
     this.enabled.ssao = enabled;
-    this.ssaoPass.enabled = enabled;
+    if (this.ssaoPass) this.ssaoPass.enabled = enabled;
   }
 
   setFXAAEnabled(enabled: boolean): void {
     this.enabled.fxaa = enabled;
-    this.fxaaPass.enabled = enabled;
+    if (this.fxaaPass) this.fxaaPass.enabled = enabled;
   }
 
   setFilmEnabled(enabled: boolean): void {
     this.enabled.film = enabled;
-    this.filmPass.enabled = enabled;
+    if (this.filmPass) this.filmPass.enabled = enabled;
   }
 
   setBloomStrength(strength: number): void {
-    this.bloomPass.strength = strength;
+    if (this.bloomPass) this.bloomPass.strength = strength;
   }
 
   setBloomThreshold(threshold: number): void {
-    this.bloomPass.threshold = threshold;
+    if (this.bloomPass) this.bloomPass.threshold = threshold;
   }
 
   setBloomRadius(radius: number): void {
-    this.bloomPass.radius = radius;
+    if (this.bloomPass) this.bloomPass.radius = radius;
   }
 
   setSSAOKernelRadius(radius: number): void {
-    this.ssaoPass.kernelRadius = radius;
+    if (this.ssaoPass) this.ssaoPass.kernelRadius = radius;
   }
 
   setSSAOMinDistance(dist: number): void {
-    this.ssaoPass.minDistance = dist;
+    if (this.ssaoPass) this.ssaoPass.minDistance = dist;
   }
 
   setSSAOMaxDistance(dist: number): void {
-    this.ssaoPass.maxDistance = dist;
+    if (this.ssaoPass) this.ssaoPass.maxDistance = dist;
   }
 
-  getComposer(): EffectComposer {
-    return this.composer;
+  getComposer(): EffectComposer | null {
+    return this.bypass ? null : this.composer;
   }
 }

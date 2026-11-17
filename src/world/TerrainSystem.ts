@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { SceneManager } from '../systems/SceneManager.js';
+import { DEVICE } from '../systems/DeviceProfile.js';
 
 export class TerrainSystem {
   private sceneManager: SceneManager;
@@ -7,7 +8,9 @@ export class TerrainSystem {
   private worldSize: number;
   private terrainMesh: THREE.Mesh | null = null;
   private heightMap: Float32Array | null = null;
-  private resolution = 1024; // heightmap resolution
+  // 1024 builds a million-vertex mesh in one blocking pass, which freezes
+  // phones; they get a coarse landscape instead (desktop is unchanged).
+  private resolution = DEVICE.terrainResolution;
   private terrainSize = 8192; // world size in meters
 
   // LOD meshes
@@ -23,7 +26,7 @@ export class TerrainSystem {
   async init(): Promise<void> {
     await this.generateTerrain();
     this.createTerrainMesh();
-    this.createLODMeshes();
+    if (DEVICE.enableTerrainLod) this.createLODMeshes();
   }
 
   private async generateTerrain(): Promise<void> {
