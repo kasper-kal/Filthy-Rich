@@ -1,79 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="A cleaning bucket overflowing with gold coins">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="A cleaning bucket full of gold coins">
   <title>Filthy Rich — the bucket that fills up</title>
-  <defs>
-    <linearGradient id="b-tile" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1c1c22"/>
-      <stop offset="1" stop-color="#05050a"/>
-    </linearGradient>
-    <linearGradient id="b-gold" x1="0" y1="0" x2="0.8" y2="1">
-      <stop offset="0" stop-color="#fff7d2"/>
-      <stop offset="0.35" stop-color="#f8d46c"/>
-      <stop offset="0.72" stop-color="#dd9f2b"/>
-      <stop offset="1" stop-color="#a06c18"/>
-    </linearGradient>
-    <linearGradient id="b-teal" x1="0.1" y1="0" x2="0.9" y2="1">
-      <stop offset="0" stop-color="#3c8b9c"/>
-      <stop offset="0.5" stop-color="#22636f"/>
-      <stop offset="1" stop-color="#0e3a44"/>
-    </linearGradient>
-    <filter id="b-blur" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="7"/>
-    </filter>
-    <filter id="b-lift" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#03060a" flood-opacity="0.7"/>
-    </filter>
-  </defs>
 
-  <rect width="256" height="256" rx="58" fill="url(#b-tile)"/>
-  <rect x="0.5" y="0.5" width="255" height="255" rx="57.5" fill="none" stroke="#ffffff" stroke-opacity="0.05"/>
-
-  <ellipse cx="128" cy="220" rx="66" ry="9" fill="#000000" opacity="0.6" filter="url(#b-blur)"/>
+  <rect width="256" height="256" rx="56" fill="#0b0b0e"/>
 
   <!-- handle -->
-  <path d="M 84 142 A 44 44 0 0 1 172 142" fill="none" stroke="#8f9aa3" stroke-width="7" stroke-linecap="round"/>
-  <path d="M 90 140 A 38 38 0 0 1 166 140" fill="none" stroke="#d3dae0" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 88 138 A 40 40 0 0 1 168 138" fill="none" stroke="#9aa6ae" stroke-width="8" stroke-linecap="round"/>
 
-  <g filter="url(#b-lift)">
-    <!-- bucket -->
-    <path d="M 76 142 H 180 L 168 206 Q 166 218 152 218 H 104 Q 90 218 88 206 Z" fill="url(#b-teal)"/>
-    <path d="M 88 150 L 98 210" stroke="#ffffff" stroke-opacity="0.14" stroke-width="10" stroke-linecap="round"/>
-    <path d="M 168 150 L 158 210" stroke="#000000" stroke-opacity="0.18" stroke-width="8" stroke-linecap="round"/>
-    <!-- rim -->
-    <ellipse cx="128" cy="142" rx="52" ry="11" fill="#3f909f"/>
-    <ellipse cx="128" cy="140" rx="44" ry="8" fill="#0b2b33"/>
-
-    <!-- coins piling out -->
-    <g fill="url(#b-gold)">
-      <circle cx="98" cy="130" r="13"/>
-      <circle cx="122" cy="120" r="15"/>
-      <circle cx="148" cy="126" r="13"/>
-      <circle cx="168" cy="138" r="10"/>
-      <circle cx="110" cy="142" r="12"/>
-      <circle cx="138" cy="144" r="12"/>
-    </g>
-    <g fill="none" stroke="#8a5c12" stroke-opacity="0.35" stroke-width="1.5">
-      <circle cx="98" cy="130" r="13"/>
-      <circle cx="122" cy="120" r="15"/>
-      <circle cx="148" cy="126" r="13"/>
-      <circle cx="110" cy="142" r="12"/>
-      <circle cx="138" cy="144" r="12"/>
-    </g>
-    <g fill="#fff8dd" opacity="0.5">
-      <circle cx="93" cy="125" r="3"/>
-      <circle cx="115" cy="113" r="3.5"/>
-      <circle cx="143" cy="121" r="3"/>
-      <circle cx="105" cy="138" r="2.5"/>
-    </g>
-    <!-- rim lip over the coins -->
-    <path d="M 76 142 A 52 11 0 0 0 180 142" fill="none" stroke="#4ba0b1" stroke-opacity="0.9" stroke-width="4"/>
+  <!-- coins sitting inside the mouth, drawn behind the rim -->
+  <g fill="#f2c14e">
+    <circle cx="98" cy="128" r="14"/>
+    <circle cx="124" cy="118" r="16"/>
+    <circle cx="152" cy="126" r="14"/>
+    <circle cx="172" cy="138" r="10"/>
+    <circle cx="112" cy="140" r="12"/>
+    <circle cx="142" cy="142" r="12"/>
+  </g>
+  <g fill="none" stroke="#b98a2a" stroke-width="2">
+    <circle cx="98" cy="128" r="14"/>
+    <circle cx="124" cy="118" r="16"/>
+    <circle cx="152" cy="126" r="14"/>
+    <circle cx="112" cy="140" r="12"/>
+    <circle cx="142" cy="142" r="12"/>
   </g>
 
-  <!-- a coin still falling -->
-  <g filter="url(#b-lift)">
-    <circle cx="196" cy="176" r="10" fill="url(#b-gold)"/>
-    <circle cx="196" cy="176" r="10" fill="none" stroke="#8a5c12" stroke-opacity="0.35" stroke-width="1.5"/>
-    <circle cx="193" cy="173" r="2.5" fill="#fff8dd" opacity="0.55"/>
-  </g>
+  <!-- bucket -->
+  <path d="M 76 142 H 180 L 170 202 A 22 22 0 0 1 148 220 H 108 A 22 22 0 0 1 86 202 Z" fill="#2e7d8c"/>
+  <rect x="72" y="132" width="112" height="20" rx="10" fill="#1d5a66"/>
 
-  <path d="M 62 84 l 4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4 z" fill="#fff6d6"/>
+  <!-- coin still falling -->
+  <circle cx="198" cy="180" r="11" fill="#f2c14e"/>
+  <circle cx="198" cy="180" r="11" fill="none" stroke="#b98a2a" stroke-width="2"/>
+
+  <path d="M 58 86 l 4.5 11 11 4.5 -11 4.5 -4.5 11 -4.5 -11 -11 -4.5 11 -4.5 z" fill="#fff3c4"/>
+  <path d="M 200 62 l 3.5 8.5 8.5 3.5 -8.5 3.5 -3.5 8.5 -3.5 -8.5 -8.5 -3.5 8.5 -3.5 z" fill="#fff3c4"/>
 </svg>

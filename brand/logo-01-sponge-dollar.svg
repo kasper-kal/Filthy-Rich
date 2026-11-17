@@ -1,76 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="A grimy sponge with a gold dollar sign lifted off it">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="A sponge with a gold dollar sign">
   <title>Filthy Rich — the sponge that pays</title>
-  <defs>
-    <linearGradient id="s-tile" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1c1c22"/>
-      <stop offset="1" stop-color="#05050a"/>
-    </linearGradient>
-    <linearGradient id="s-gold" x1="0.05" y1="0" x2="0.95" y2="1">
-      <stop offset="0" stop-color="#fff7d2"/>
-      <stop offset="0.32" stop-color="#f8d46c"/>
-      <stop offset="0.66" stop-color="#dd9f2b"/>
-      <stop offset="1" stop-color="#9e6a17"/>
-    </linearGradient>
-    <linearGradient id="s-front" x1="0.1" y1="0" x2="0.4" y2="1">
-      <stop offset="0" stop-color="#5d5140"/>
-      <stop offset="0.55" stop-color="#3f3527"/>
-      <stop offset="1" stop-color="#221d16"/>
-    </linearGradient>
-    <filter id="s-blur" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="7"/>
-    </filter>
-    <filter id="s-lift" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0a0703" flood-opacity="0.7"/>
-    </filter>
-  </defs>
 
-  <rect width="256" height="256" rx="58" fill="url(#s-tile)"/>
-  <rect x="0.5" y="0.5" width="255" height="255" rx="57.5" fill="none" stroke="#ffffff" stroke-opacity="0.05"/>
+  <rect width="256" height="256" rx="56" fill="#0b0b0e"/>
 
-  <ellipse cx="128" cy="192" rx="82" ry="10" fill="#000000" opacity="0.6" filter="url(#s-blur)"/>
+  <!-- sponge block, slightly uneven corners so it reads used rather than geometric -->
+  <path d="M 68 78 H 188 A 20 20 0 0 1 208 98 V 162 A 22 22 0 0 1 186 184 H 66 A 22 22 0 0 1 44 162 V 100 A 24 24 0 0 1 68 78 Z"
+        fill="#5a4d38"/>
 
-  <g transform="rotate(-4 128 128)">
-    <!-- top face: the lighter sliver above the front face gives the slab thickness -->
-    <rect x="48" y="68" width="160" height="112" rx="24" fill="#7d6c52"/>
-    <g fill="#4a3f2e" opacity="0.55">
-      <ellipse cx="72" cy="76" rx="6" ry="3"/>
-      <ellipse cx="112" cy="74" rx="4" ry="2.5"/>
-      <ellipse cx="152" cy="77" rx="5" ry="2.5"/>
-      <ellipse cx="188" cy="75" rx="4" ry="2"/>
-    </g>
-
-    <!-- front face -->
-    <rect x="48" y="82" width="160" height="104" rx="20" fill="url(#s-front)"/>
-    <rect x="48" y="170" width="160" height="16" rx="8" fill="#000000" opacity="0.22"/>
-    <g fill="#191410" opacity="0.6">
-      <circle cx="70" cy="100" r="6"/>
-      <circle cx="102" cy="96" r="4"/>
-      <circle cx="136" cy="104" r="5"/>
-      <circle cx="170" cy="98" r="4"/>
-      <circle cx="192" cy="112" r="5"/>
-      <circle cx="64" cy="128" r="5"/>
-      <circle cx="86" cy="146" r="7"/>
-      <circle cx="120" cy="126" r="4"/>
-      <circle cx="152" cy="140" r="6"/>
-      <circle cx="184" cy="132" r="4"/>
-      <circle cx="74" cy="164" r="5"/>
-      <circle cx="108" cy="170" r="4"/>
-      <circle cx="146" cy="166" r="7"/>
-      <circle cx="178" cy="162" r="4"/>
-      <circle cx="196" cy="150" r="5"/>
-    </g>
+  <!-- pores, cut straight out of the block -->
+  <g fill="#1e1a13">
+    <circle cx="70" cy="106" r="8"/>
+    <circle cx="104" cy="94" r="5"/>
+    <circle cx="146" cy="100" r="7"/>
+    <circle cx="186" cy="108" r="5"/>
+    <circle cx="62" cy="146" r="6"/>
+    <circle cx="96" cy="164" r="7"/>
+    <circle cx="132" cy="150" r="4"/>
+    <circle cx="168" cy="166" r="8"/>
+    <circle cx="196" cy="146" r="4"/>
+    <circle cx="120" cy="124" r="3"/>
+    <circle cx="176" cy="128" r="3"/>
   </g>
 
-  <g filter="url(#s-lift)">
-    <path d="M 152 101 C 152 83 134 76 120 82 C 105 89 107 108 125 114 C 145 121 150 141 133 149 C 117 156 100 148 98 132"
-          fill="none" stroke="url(#s-gold)" stroke-width="16" stroke-linecap="round"/>
-    <rect x="118" y="72" width="16" height="108" rx="8" fill="url(#s-gold)"/>
-    <path d="M 152 101 C 152 87 138 79 126 81" fill="none" stroke="#fff8dd" stroke-opacity="0.75" stroke-width="3" stroke-linecap="round"/>
-    <rect x="120.5" y="80" width="3.5" height="54" rx="1.75" fill="#fff8dd" opacity="0.6"/>
+  <!-- dollar sign: true S from two real arcs, square-cut bar through it -->
+  <g fill="none" stroke="#f2c14e" stroke-width="17">
+    <path d="M 148 100 A 22 22 0 0 0 104 100 C 104 122 148 126 148 148 A 22 22 0 0 1 104 148"/>
   </g>
+  <rect x="117.5" y="66" width="17" height="118" fill="#f2c14e"/>
 
-  <g fill="#fff6d6">
-    <path d="M 202 58 l 4.5 11 11 4.5 -11 4.5 -4.5 11 -4.5 -11 -11 -4.5 11 -4.5 z"/>
-    <path d="M 60 44 l 3 7.5 7.5 3 -7.5 3 -3 7.5 -3 -7.5 -7.5 -3 7.5 -3 z" opacity="0.8"/>
+  <g fill="#fff3c4">
+    <path d="M 196 56 l 5 12 12 5 -12 5 -5 12 -5 -12 -12 -5 12 -5 z"/>
+    <path d="M 58 44 l 3.5 8.5 8.5 3.5 -8.5 3.5 -3.5 8.5 -3.5 -8.5 -8.5 -3.5 8.5 -3.5 z"/>
   </g>
 </svg>

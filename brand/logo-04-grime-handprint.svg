@@ -1,72 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="A grimy handprint holding a gold coin">
   <title>Filthy Rich — filth in hand, money in hand</title>
-  <defs>
-    <linearGradient id="h-tile" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1c1c22"/>
-      <stop offset="1" stop-color="#05050a"/>
-    </linearGradient>
-    <linearGradient id="h-gold" x1="0" y1="0" x2="0.8" y2="1">
-      <stop offset="0" stop-color="#fff7d2"/>
-      <stop offset="0.35" stop-color="#f8d46c"/>
-      <stop offset="0.72" stop-color="#dd9f2b"/>
-      <stop offset="1" stop-color="#a06c18"/>
-    </linearGradient>
-    <linearGradient id="h-grime" x1="0.2" y1="0" x2="0.8" y2="1">
-      <stop offset="0" stop-color="#7d6a4f"/>
-      <stop offset="0.55" stop-color="#584a37"/>
-      <stop offset="1" stop-color="#332a20"/>
-    </linearGradient>
-    <filter id="h-blur" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="6"/>
-    </filter>
-    <filter id="h-lift" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0a0703" flood-opacity="0.7"/>
-    </filter>
-  </defs>
 
-  <rect width="256" height="256" rx="58" fill="url(#h-tile)"/>
-  <rect x="0.5" y="0.5" width="255" height="255" rx="57.5" fill="none" stroke="#ffffff" stroke-opacity="0.05"/>
+  <rect width="256" height="256" rx="56" fill="#0b0b0e"/>
 
-  <ellipse cx="128" cy="206" rx="62" ry="9" fill="#000000" opacity="0.55" filter="url(#h-blur)"/>
-
-  <g filter="url(#h-lift)" transform="rotate(-6 128 140)">
-    <!-- print shadow -->
-    <g fill="#000000" opacity="0.35">
-      <rect x="101" y="100" width="16" height="52" rx="8"/>
-      <rect x="121" y="88" width="16" height="64" rx="8"/>
-      <rect x="141" y="94" width="16" height="58" rx="8"/>
-      <rect x="161" y="106" width="15" height="46" rx="7.5"/>
-      <rect x="88" y="130" width="15" height="44" rx="7.5" transform="rotate(-32 95 152)"/>
-      <ellipse cx="130" cy="164" rx="36" ry="29"/>
-    </g>
-    <!-- grimy print -->
-    <g fill="url(#h-grime)">
-      <rect x="99" y="98" width="16" height="52" rx="8"/>
-      <rect x="119" y="86" width="16" height="64" rx="8"/>
-      <rect x="139" y="92" width="16" height="58" rx="8"/>
-      <rect x="159" y="104" width="15" height="46" rx="7.5"/>
-      <ellipse cx="128" cy="162" rx="36" ry="29"/>
-      <rect x="84" y="128" width="15" height="44" rx="7.5" transform="rotate(-32 91 150)"/>
-    </g>
-    <!-- speckled dirt in the print -->
-    <g fill="#1d1710" opacity="0.5">
-      <circle cx="112" cy="152" r="3"/>
-      <circle cx="140" cy="176" r="4"/>
-      <circle cx="104" cy="176" r="2.5"/>
-      <circle cx="150" cy="152" r="2.5"/>
-      <circle cx="126" cy="192" r="3"/>
-    </g>
+  <!-- one flat handprint silhouette, no shading -->
+  <g fill="#6b5a44">
+    <rect x="100" y="96" width="18" height="58" rx="9"/>
+    <rect x="122" y="82" width="18" height="72" rx="9"/>
+    <rect x="144" y="90" width="18" height="64" rx="9"/>
+    <rect x="166" y="104" width="17" height="50" rx="8.5"/>
+    <path d="M 92 156 C 92 134 110 120 132 120 C 156 120 174 134 174 158 C 174 184 156 200 132 200 C 108 200 92 182 92 156 Z"/>
+    <rect x="86" y="132" width="18" height="52" rx="9" transform="rotate(-34 95 158)"/>
   </g>
 
-  <!-- the money in the palm -->
-  <g filter="url(#h-lift)">
-    <circle cx="128" cy="160" r="25" fill="url(#h-gold)"/>
-    <circle cx="128" cy="160" r="25" fill="none" stroke="#8a5c12" stroke-opacity="0.35" stroke-width="2"/>
-    <circle cx="128" cy="160" r="17" fill="none" stroke="#a57c22" stroke-opacity="0.55" stroke-width="2.5"/>
-    <path d="M 134 148 c 0 -4 -8 -6 -10 -1 c -2 5 9 5 9 10 c 0 5 -9 4 -10 0" fill="none" stroke="#a3701a" stroke-opacity="0.85" stroke-width="3.5" stroke-linecap="round"/>
-    <path d="M 128 143 v 26" stroke="#a3701a" stroke-opacity="0.85" stroke-width="3.5" stroke-linecap="round"/>
-    <circle cx="117" cy="150" r="5" fill="#fff8dd" opacity="0.55"/>
+  <!-- coin in the palm -->
+  <circle cx="132" cy="158" r="26" fill="#f2c14e"/>
+  <circle cx="132" cy="158" r="26" fill="none" stroke="#b98a2a" stroke-width="3"/>
+  <circle cx="132" cy="158" r="18" fill="none" stroke="#d9a63a" stroke-width="2"/>
+
+  <!-- the same dollar sign as the main mark, scaled into the coin -->
+  <g transform="translate(132 158) scale(0.26) translate(-126 -125)">
+    <path d="M 148 100 A 22 22 0 0 0 104 100 C 104 122 148 126 148 148 A 22 22 0 0 1 104 148"
+          fill="none" stroke="#8f6516" stroke-width="17"/>
+    <rect x="117.5" y="64" width="17" height="122" fill="#8f6516"/>
   </g>
 
-  <path d="M 196 74 l 4.5 11 11 4.5 -11 4.5 -4.5 11 -4.5 -11 -11 -4.5 11 -4.5 z" fill="#fff6d6"/>
+  <path d="M 198 82 l 4.5 11 11 4.5 -11 4.5 -4.5 11 -4.5 -11 -11 -4.5 11 -4.5 z" fill="#fff3c4"/>
 </svg>
