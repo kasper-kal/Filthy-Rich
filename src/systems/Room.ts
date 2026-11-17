@@ -85,6 +85,9 @@ export class Room {
     ceiling.rotation.x = Math.PI / 2;
     ceiling.position.set(cx, cy + halfH, cz);
     ceiling.receiveShadow = true;
+    // The roof has to block the sun, otherwise the interior floor is lit as if
+    // the house had no ceiling at all.
+    ceiling.castShadow = true;
     ceiling.name = `ceiling_${data.name}`;
     this.ceilings.push(ceiling);
     group.add(ceiling);
@@ -93,7 +96,7 @@ export class Room {
     this.createWallsWithOpenings(group, data, cx, cy, cz, halfW, halfH, halfD);
 
     // Baseboards
-    this.createBaseboards(group, data, cx, cy, cz, halfW, halfD);
+    this.createBaseboards(group, data, cx, cy, cz, halfW, halfH, halfD);
 
     // Door frames
     this.createDoorFrames(group, data, cx, cy, cz, halfW, halfH, halfD);
@@ -102,7 +105,7 @@ export class Room {
     this.createWindowFrames(group, data, cx, cy, cz, halfW, halfH, halfD);
 
     // Crown molding
-    this.createCrownMolding(group, data, cx, cy, cz, halfW, halfD);
+    this.createCrownMolding(group, data, cx, cy, cz, halfW, halfH, halfD);
 
     return group;
   }
@@ -318,6 +321,7 @@ export class Room {
     cy: number,
     cz: number,
     halfW: number,
+    halfH: number,
     halfD: number
   ): void {
     const geo = new THREE.BoxGeometry(data.size.x, 0.12, 0.06);
@@ -328,15 +332,15 @@ export class Room {
     });
 
     const baseboardData = [
-      { pos: [cx, cy - halfD + 0.06, cz - halfD + 0.03], rot: [0, 0, 0], scale: [1, 1, 1] },
-      { pos: [cx, cy - halfD + 0.06, cz + halfD - 0.03], rot: [0, Math.PI, 0], scale: [1, 1, 1] },
+      { pos: [cx, cy - halfH + 0.06, cz - halfD + 0.03], rot: [0, 0, 0], scale: [1, 1, 1] },
+      { pos: [cx, cy - halfH + 0.06, cz + halfD - 0.03], rot: [0, Math.PI, 0], scale: [1, 1, 1] },
       {
-        pos: [cx - halfW + 0.03, cy - halfD + 0.06, cz],
+        pos: [cx - halfW + 0.03, cy - halfH + 0.06, cz],
         rot: [0, -Math.PI / 2, 0],
         scale: [data.size.z / data.size.x, 1, 1],
       },
       {
-        pos: [cx + halfW - 0.03, cy - halfD + 0.06, cz],
+        pos: [cx + halfW - 0.03, cy - halfH + 0.06, cz],
         rot: [0, Math.PI / 2, 0],
         scale: [data.size.z / data.size.x, 1, 1],
       },
@@ -554,6 +558,7 @@ export class Room {
     cy: number,
     cz: number,
     halfW: number,
+    halfH: number,
     halfD: number
   ): void {
     // Simple crown molding at ceiling-wall junction
@@ -561,15 +566,15 @@ export class Room {
     const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.1 });
 
     const moldings = [
-      { pos: [cx, cy + halfD - 0.04, cz - halfD + 0.04], rot: [0, 0, 0], scale: [1, 1, 1] },
-      { pos: [cx, cy + halfD - 0.04, cz + halfD - 0.04], rot: [0, Math.PI, 0], scale: [1, 1, 1] },
+      { pos: [cx, cy + halfH - 0.04, cz - halfD + 0.04], rot: [0, 0, 0], scale: [1, 1, 1] },
+      { pos: [cx, cy + halfH - 0.04, cz + halfD - 0.04], rot: [0, Math.PI, 0], scale: [1, 1, 1] },
       {
-        pos: [cx - halfW + 0.04, cy + halfD - 0.04, cz],
+        pos: [cx - halfW + 0.04, cy + halfH - 0.04, cz],
         rot: [0, -Math.PI / 2, 0],
         scale: [data.size.z / data.size.x, 1, 1],
       },
       {
-        pos: [cx + halfW - 0.04, cy + halfD - 0.04, cz],
+        pos: [cx + halfW - 0.04, cy + halfH - 0.04, cz],
         rot: [0, Math.PI / 2, 0],
         scale: [data.size.z / data.size.x, 1, 1],
       },

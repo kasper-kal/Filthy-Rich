@@ -31,3 +31,9 @@ coverage/
 .env
 .env.local
 /freebuff-sites-build/
+
+# Deployment staging output, built from dist
+deploy/
+
+# Local visual-audit screenshots
+audit/

@@ -2,7 +2,10 @@ import * as THREE from 'three';
 
 export class CameraController {
   public camera: THREE.PerspectiveCamera;
-  public target = new THREE.Vector3(0, 1.6, 0);
+  // Matches the starting camera position below; update() drives the camera
+  // from this target, so the two have to agree.
+  public target = new THREE.Vector3(0, 1.6, 6);
+  private baseFov = 75;
 
   private yaw = 0;
   private pitch = 0;
@@ -332,6 +335,18 @@ export class CameraController {
 
   onResize(width: number, height: number): void {
     this.camera.aspect = width / height;
+    // A portrait phone shows a ~39° horizontal slice of a 75° vertical frustum,
+    // which feels like binoculars. Widen the vertical field only while the
+    // viewport is taller than it is wide, so landscape/desktop is unchanged.
+    if (this.camera.aspect >= 1) {
+      this.camera.fov = this.baseFov;
+    } else {
+      const halfFov = THREE.MathUtils.degToRad(this.baseFov / 2);
+      this.camera.fov = Math.min(
+        95,
+        THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(halfFov) / this.camera.aspect))
+      );
+    }
     this.camera.updateProjectionMatrix();
   }
 }

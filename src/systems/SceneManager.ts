@@ -22,6 +22,9 @@ export class SceneManager {
   async init(): Promise<void> {
     this.createScene();
     this.createCamera();
+    // Apply the aspect-dependent field of view immediately, so a phone that
+    // loads in portrait never has to wait for a rotation to get a usable view.
+    this.onResize(window.innerWidth, window.innerHeight);
     this.createLighting();
     this.room = new Room(this.scene);
     await this.room.init();
@@ -42,11 +45,11 @@ export class SceneManager {
 
   private createLighting(): void {
     // Dark ambient for mood
-    const ambient = new THREE.AmbientLight(0x222233, 0.12);
+    const ambient = new THREE.AmbientLight(0x2a2a33, 0.4);
     this.scene.add(ambient);
 
     // Main sun - warm, directional
-    const sun = new THREE.DirectionalLight(0xfff0d8, 2.0);
+    const sun = new THREE.DirectionalLight(0xfff0d8, 0.7);
     sun.position.set(8, 18, 10);
     // Phones get no shadows at all; 4K shadow maps wreck mobile GPUs.
     sun.castShadow = DEVICE.enableShadows;
@@ -63,17 +66,19 @@ export class SceneManager {
     this.scene.add(sun);
 
     // Cool fill from window (north-facing)
-    const windowLight = new THREE.DirectionalLight(0x88aacc, 0.5);
+    const windowLight = new THREE.DirectionalLight(0x88aacc, 0.2);
     windowLight.position.set(-5, 6, -15);
     windowLight.castShadow = false;
     this.scene.add(windowLight);
 
     // Rim/backlight for shape
-    const rim = new THREE.DirectionalLight(0xffddaa, 0.15);
+    const rim = new THREE.DirectionalLight(0xffddaa, 0.1);
     rim.position.set(0, 8, -15);
     this.scene.add(rim);
 
-    // Room-specific point lights for interior atmosphere
+    // Room-specific point lights for interior atmosphere.
+    // These are physical (candela) values: with decay 2 a 0.5 lights the floor by
+    // 0.5 / distance², which is invisible, so the interior rendered pitch black.
     const roomLights: {
       pos: THREE.Vector3;
       color: number;
@@ -82,21 +87,21 @@ export class SceneManager {
       decay: number;
     }[] = [
       // Entrance hall
-      { pos: new THREE.Vector3(0, 2.5, 6), color: 0xffeecc, intensity: 0.6, dist: 8, decay: 2 },
+      { pos: new THREE.Vector3(0, 2.5, 6), color: 0xffeecc, intensity: 8, dist: 8, decay: 2 },
       // Living room
-      { pos: new THREE.Vector3(0, 2.5, 0), color: 0xffddaa, intensity: 0.5, dist: 10, decay: 2 },
+      { pos: new THREE.Vector3(0, 2.5, 0), color: 0xffddaa, intensity: 7, dist: 10, decay: 2 },
       // Kitchen
-      { pos: new THREE.Vector3(5.5, 2.5, 6), color: 0xffffee, intensity: 0.7, dist: 6, decay: 2 },
+      { pos: new THREE.Vector3(5.5, 2.5, 6), color: 0xffffee, intensity: 9, dist: 6, decay: 2 },
       // Dining
-      { pos: new THREE.Vector3(5.5, 2.5, 0), color: 0xffccaa, intensity: 0.4, dist: 8, decay: 2 },
+      { pos: new THREE.Vector3(5.5, 2.5, 0), color: 0xffccaa, intensity: 4, dist: 8, decay: 2 },
       // Master bedroom
-      { pos: new THREE.Vector3(-6, 2.5, 6), color: 0xffeeee, intensity: 0.3, dist: 8, decay: 2 },
+      { pos: new THREE.Vector3(-6, 2.5, 6), color: 0xffeeee, intensity: 3, dist: 8, decay: 2 },
       // Bathroom
-      { pos: new THREE.Vector3(-1, 2.5, 6), color: 0xaaeeff, intensity: 0.5, dist: 5, decay: 2 },
+      { pos: new THREE.Vector3(-1, 2.5, 6), color: 0xaaeeff, intensity: 5, dist: 5, decay: 2 },
       // Study
-      { pos: new THREE.Vector3(-6, 2.5, 0), color: 0xffdd99, intensity: 0.4, dist: 6, decay: 2 },
+      { pos: new THREE.Vector3(-6, 2.5, 0), color: 0xffdd99, intensity: 4, dist: 6, decay: 2 },
       // Bedroom 2
-      { pos: new THREE.Vector3(-6, 2.5, -5), color: 0xffeeee, intensity: 0.3, dist: 6, decay: 2 },
+      { pos: new THREE.Vector3(-6, 2.5, -5), color: 0xffeeee, intensity: 3, dist: 6, decay: 2 },
     ];
 
     roomLights.forEach(lightData => {

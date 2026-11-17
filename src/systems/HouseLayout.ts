@@ -27,11 +27,16 @@ export interface WindowData {
   heightFromFloor: number;
 }
 
+// Rooms are placed by their centre, and every room is 3m tall, so the centre
+// sits at half the wall height. Without this the floors sank 1.5m below the
+// ground and the player's eyes ended up above the ceilings.
+const ROOM_CENTRE_Y = 1.5;
+
 export const HOUSE_LAYOUT: RoomData[] = [
   // ENTRANCE HALL
   {
     name: 'entrance',
-    position: new THREE.Vector3(0, 0, 6),
+    position: new THREE.Vector3(0, ROOM_CENTRE_Y, 6),
     size: new THREE.Vector3(5, 3, 4),
     doors: [
       { wall: 'south', position: 0.5, width: 1.0, height: 2.1, connectsTo: 'outside' },
@@ -47,7 +52,7 @@ export const HOUSE_LAYOUT: RoomData[] = [
   // LIVING ROOM
   {
     name: 'living',
-    position: new THREE.Vector3(0, 0, 0),
+    position: new THREE.Vector3(0, ROOM_CENTRE_Y, 0),
     size: new THREE.Vector3(6, 3, 6),
     doors: [
       { wall: 'south', position: 0.5, width: 0.9, height: 2.1, connectsTo: 'entrance' },
@@ -65,7 +70,7 @@ export const HOUSE_LAYOUT: RoomData[] = [
   // KITCHEN
   {
     name: 'kitchen',
-    position: new THREE.Vector3(5.5, 0, 6),
+    position: new THREE.Vector3(5.5, ROOM_CENTRE_Y, 6),
     size: new THREE.Vector3(4, 3, 4),
     doors: [
       { wall: 'west', position: 0.5, width: 0.8, height: 2.1, connectsTo: 'entrance' },
@@ -79,7 +84,7 @@ export const HOUSE_LAYOUT: RoomData[] = [
   // DINING ROOM
   {
     name: 'dining',
-    position: new THREE.Vector3(5.5, 0, 0),
+    position: new THREE.Vector3(5.5, ROOM_CENTRE_Y, 0),
     size: new THREE.Vector3(4, 3, 5),
     doors: [
       { wall: 'west', position: 0.3, width: 0.8, height: 2.1, connectsTo: 'living' },
@@ -93,7 +98,7 @@ export const HOUSE_LAYOUT: RoomData[] = [
   // MASTER BEDROOM
   {
     name: 'master_bedroom',
-    position: new THREE.Vector3(-6, 0, 6),
+    position: new THREE.Vector3(-6, ROOM_CENTRE_Y, 6),
     size: new THREE.Vector3(5, 3, 5),
     doors: [{ wall: 'east', position: 0.5, width: 0.9, height: 2.1, connectsTo: 'bathroom' }],
     windows: [
@@ -107,7 +112,7 @@ export const HOUSE_LAYOUT: RoomData[] = [
   // BATHROOM
   {
     name: 'bathroom',
-    position: new THREE.Vector3(-1, 0, 6),
+    position: new THREE.Vector3(-1, ROOM_CENTRE_Y, 6),
     size: new THREE.Vector3(3.5, 3, 3.5),
     doors: [
       { wall: 'west', position: 0.5, width: 0.8, height: 2.1, connectsTo: 'entrance' },
@@ -121,7 +126,7 @@ export const HOUSE_LAYOUT: RoomData[] = [
   // STUDY / OFFICE
   {
     name: 'study',
-    position: new THREE.Vector3(-6, 0, 0),
+    position: new THREE.Vector3(-6, ROOM_CENTRE_Y, 0),
     size: new THREE.Vector3(4, 3, 4),
     doors: [{ wall: 'east', position: 0.5, width: 0.8, height: 2.1, connectsTo: 'living' }],
     windows: [{ wall: 'west', position: 0.5, width: 1.2, height: 1.3, heightFromFloor: 0.9 }],
@@ -132,7 +137,7 @@ export const HOUSE_LAYOUT: RoomData[] = [
   // SECOND BEDROOM
   {
     name: 'bedroom2',
-    position: new THREE.Vector3(-6, 0, -5),
+    position: new THREE.Vector3(-6, ROOM_CENTRE_Y, -5),
     size: new THREE.Vector3(4, 3, 4),
     doors: [{ wall: 'north', position: 0.5, width: 0.8, height: 2.1, connectsTo: 'living' }],
     windows: [
