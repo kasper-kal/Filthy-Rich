@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="A mop with solid gold strands">
+  <title>Filthy Rich — a mop made of money</title>
+  <defs>
+    <linearGradient id="p-tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c1c22"/>
+      <stop offset="1" stop-color="#05050a"/>
+    </linearGradient>
+    <linearGradient id="p-gold" x1="0" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#fff7d2"/>
+      <stop offset="0.32" stop-color="#f8d46c"/>
+      <stop offset="0.7" stop-color="#dd9f2b"/>
+      <stop offset="1" stop-color="#9b6916"/>
+    </linearGradient>
+    <linearGradient id="p-shaft" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8d8578"/>
+      <stop offset="0.3" stop-color="#f2ece0"/>
+      <stop offset="0.7" stop-color="#c6bdae"/>
+      <stop offset="1" stop-color="#7d7568"/>
+    </linearGradient>
+    <filter id="p-blur" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+    <filter id="p-lift" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0a0703" flood-opacity="0.7"/>
+    </filter>
+  </defs>
+
+  <rect width="256" height="256" rx="58" fill="url(#p-tile)"/>
+  <rect x="0.5" y="0.5" width="255" height="255" rx="57.5" fill="none" stroke="#ffffff" stroke-opacity="0.05"/>
+
+  <ellipse cx="128" cy="214" rx="58" ry="9" fill="#000000" opacity="0.55" filter="url(#p-blur)"/>
+
+  <g filter="url(#p-lift)">
+    <!-- handle -->
+    <rect x="140" y="30" width="16" height="92" rx="8" fill="url(#p-shaft)"/>
+    <rect x="144.5" y="38" width="3.5" height="74" rx="1.75" fill="#ffffff" opacity="0.7"/>
+
+    <!-- gold collar -->
+    <rect x="124" y="118" width="48" height="22" rx="11" fill="url(#p-gold)"/>
+    <rect x="130" y="123" width="36" height="5" rx="2.5" fill="#fff8dd" opacity="0.55"/>
+
+    <!-- solid gold mop head -->
+    <path d="M 122 140 H 174 L 186 190 H 110 Z" fill="url(#p-gold)"/>
+    <path d="M 118 148 H 178" stroke="#fff8dd" stroke-opacity="0.35" stroke-width="3"/>
+  </g>
+
+  <!-- gold strands -->
+  <g stroke-linecap="round" fill="none">
+    <g stroke="#a06c18" stroke-width="11">
+      <path d="M 116 186 Q 112 200 110 208"/>
+      <path d="M 128 186 Q 126 202 125 212"/>
+      <path d="M 140 186 Q 140 202 140 214"/>
+      <path d="M 152 186 Q 154 202 156 212"/>
+      <path d="M 164 186 Q 168 200 172 206"/>
+    </g>
+    <g stroke="url(#p-gold)" stroke-width="8">
+      <path d="M 116 186 Q 112 200 110 208"/>
+      <path d="M 128 186 Q 126 202 125 212"/>
+      <path d="M 140 186 Q 140 202 140 214"/>
+      <path d="M 152 186 Q 154 202 156 212"/>
+      <path d="M 164 186 Q 168 200 172 206"/>
+    </g>
+  </g>
+
+  <g fill="#fff6d6">
+    <path d="M 74 120 l 4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4 z"/>
+    <path d="M 196 168 l 3 7.5 7.5 3 -7.5 3 -3 7.5 -3 -7.5 -7.5 -3 7.5 -3 z" opacity="0.85"/>
+  </g>
+</svg>
