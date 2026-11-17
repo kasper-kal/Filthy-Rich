@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="A gold crown with soap bubbles and grime beneath">
+  <title>Filthy Rich — suds crown</title>
+  <defs>
+    <linearGradient id="l3-tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a1a1f"/>
+      <stop offset="1" stop-color="#07070a"/>
+    </linearGradient>
+    <linearGradient id="l3-gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe9a3"/>
+      <stop offset="0.55" stop-color="#f4c455"/>
+      <stop offset="1" stop-color="#c08b25"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="56" fill="url(#l3-tile)"/>
+
+  <!-- crown -->
+  <path d="M 58 180 V 104 L 99 140 L 128 88 L 157 140 L 198 104 V 180 Z"
+        fill="url(#l3-gold)" stroke="url(#l3-gold)" stroke-width="10" stroke-linejoin="round"/>
+  <rect x="54" y="180" width="148" height="18" rx="9" fill="#b8811f"/>
+
+  <!-- suds -->
+  <g fill="#88ccee" fill-opacity="0.16" stroke="#d8eef8" stroke-opacity="0.85" stroke-width="3.5">
+    <circle cx="128" cy="52" r="17"/>
+    <circle cx="90" cy="76" r="11"/>
+    <circle cx="168" cy="72" r="9"/>
+  </g>
+  <g fill="#ffffff" opacity="0.8">
+    <circle cx="121" cy="45" r="4"/>
+    <circle cx="86" cy="72" r="2.6"/>
+    <circle cx="165" cy="69" r="2"/>
+  </g>
+
+  <!-- the filth it came from -->
+  <g fill="#3a332a">
+    <circle cx="76" cy="204" r="5"/>
+    <circle cx="102" cy="209" r="7"/>
+    <circle cx="138" cy="203" r="4"/>
+    <circle cx="166" cy="208" r="6"/>
+    <circle cx="122" cy="216" r="3"/>
+  </g>
+</svg>
