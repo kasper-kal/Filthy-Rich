@@ -79,9 +79,12 @@ be swapped freely if the steerer wants something else first.
 Followed in this order, every time, no exceptions:
 
 1. **Read the phase spec** (§5–§14) end to end, plus §3 rules and §17's row.
-2. **Check the toolkit.** `tools/blender/lib.py` and `tools/validate-models.mjs`
-   are built in Phase 1; if a later phase finds them missing, build them first
-   from §16.1 and §16.4.
+2. **Check the toolkit.** Run `./tools/setup-blender.sh --check`. If it reports
+   anything missing (fresh workspace, reset), run `./tools/setup-blender.sh`
+   and wait for "Toolchain ready" — that rebuilds Blender, its libraries and the
+   seven extensions in one command. `tools/blender/lib.py` and
+   `tools/validate-models.mjs` are built in Phase 1; if a later phase finds them
+   missing, build them first from §16.1 and §16.4.
 3. **Write the build script** `tools/blender/build_<group>.py`: one function per
    asset, cleared scene per asset, `wrote <name> <tris> tris` on success.
 4. **Run it.** Every asset in the phase table must be produced; fix tracebacks
@@ -185,6 +188,13 @@ Blender 4.2.23 LTS lives at `$HOME/blender/blender`, outside the repo. The machi
 has no root password, so the missing X libraries were unpacked from Ubuntu `.deb`
 files into `$HOME/blender-libs`. **Blender will not start without the library path.**
 
+Both live outside the repository, so a workspace reset deletes them and the project
+looks like it has no 3D pipeline at all. Rebuild the whole thing with one command:
+
+```bash
+./tools/setup-blender.sh
+```
+
 ```bash
 export LD_LIBRARY_PATH=$HOME/blender-libs/usr/lib/x86_64-linux-gnu
 $HOME/blender/blender --background --factory-startup --python-exit-code 1 \
@@ -232,20 +242,47 @@ Blender-render review loop. Instead:
 `tools/blender/build_all.py` imports each group module and runs it in order, then
 writes `public/models/models.manifest.json` (§16.3). One command, whole library.
 
-### 2.3 Installed toolkit (verified in this VM, 23 Nov 2026)
+### 2.3 Rebuilding the toolchain — `./tools/setup-blender.sh`
 
-Blender 4.2 ships with only 14 add-ons (glTF, FBX, Cycles, Node Wrangler,
-Rigify…). Seven more were installed from extensions.blender.org. Network access
-must be switched on once before the extension CLI will work:
+**This is the command to remember.** Blender, its libraries and the seven
+extensions all live in `$HOME`, outside the repo; a reset wipes them. One command
+puts everything back:
+
+```bash
+./tools/setup-blender.sh                    # Blender + libraries + 7 extensions
+./tools/setup-blender.sh --extensions-only  # add-ons only (Blender already there)
+./tools/setup-blender.sh --check            # verify everything, install nothing
+```
+
+A cold run takes a couple of minutes (350 MB Blender tarball, then ~1 MB of
+extension zips). It is idempotent: run it any time, it skips what already exists,
+prints every step it took, and exits non-zero if anything fails to load. It ends
+by printing the exact build command with the correct paths.
+
+**Verified 23 Nov 2026:** cold full run; re-run with everything present (all steps
+skipped); extensions directory deleted and reinstalled; fresh Blender extraction
+from tarball. All four pass.
+
+If it ever has to be done by hand, this is what the script automates:
 
 ```bash
 export LD_LIBRARY_PATH=$HOME/blender-libs/usr/lib/x86_64-linux-gnu
 B=$HOME/blender/blender
+# 1. Blender (350 MB)
+curl -fL -o /tmp/blender.tar.xz \
+  https://download.blender.org/release/Blender4.2/blender-4.2.23-linux-x64.tar.xz
+tar -xJf /tmp/blender.tar.xz -C /tmp && mv /tmp/blender-4.2.23-linux-x64 $HOME/blender
+# 2. Missing X libraries without root: fetch pool .debs, dpkg-deb -x into $HOME/blender-libs
+# 3. Extensions: switch on network access once, then install
 $B --background --factory-startup --python-expr \
   "import bpy; bpy.context.preferences.system.use_online_access=True; bpy.ops.wm.save_userpref()"
 $B --background --command extension sync
 $B --background --command extension install archimesh -e
 ```
+
+Blender 4.2 ships with only 14 add-ons (glTF, FBX, Cycles, Node Wrangler,
+Rigify…); the seven below come from extensions.blender.org. That is why a reset
+needs the script: none of it is in git.
 
 Installed, with the module name to pass to `addon_utils.enable()` and what the
 headless test actually did:
@@ -1497,7 +1534,8 @@ Notes:
 
 ## §20. Definition of done (every phase)
 
-0. The phase is named and ticked `[~]` in §0.2 before work starts.
+0. `./tools/setup-blender.sh --check` passes, and the phase is ticked `[~]` in
+   §0.2 before work starts.
 1. Build script runs clean; every asset logs `wrote <name> <tris> tris`.
 1b. Every asset carries vertex-colour AO (§2.4) and has been through
    `npx @gltf-transform/cli@4 prune` (§2.5).
