@@ -615,7 +615,7 @@ in full (the reduced kit in §21 may drop them).
 
 ## §6. Phase 2 — fixtures and appliances `[ ]`
 
-**Status:** `[ ]` not started · **Depends on:** Phase 1 (walls for them to stand against) · **Done when:** kitchen and bathroom are furnished, and every washable fixture has a filthy twin the cleaning code can swap in.
+**Status:** `[ ]` not started · **Depends on:** Phase 1 (walls for them to stand against) · **Done when:** kitchen and bathroom are furnished, and every washable fixture is UV-mapped well enough to carry a dirt mask the cleaning code can paint on.
 
 Folder: `public/models/fixtures/`
 
