@@ -281,8 +281,9 @@ if not mesh.color_attributes:
 bpy.ops.object.bake(type='AO', target='VERTEX_COLORS')
 ```
 
-Why this matters: glTF carries it as `COLOR_0`, and three.js multiplies vertex
-colour into the base colour automatically. Every bevel, cushion seam, drawer
+Why this matters: glTF carries it as `COLOR_0` in **linear** space, and three.js
+r165's `GLTFLoader` enables `vertexColors` on the material itself and multiplies
+it into the base colour — no code required on our side (§B.4). Every bevel, cushion seam, drawer
 reveal and skirting joint gets soft contact shadow **without a texture, a second
 UV set, or an extra draw call**. It is the cheapest realism upgrade in the whole
 pipeline and belongs in `lib.py` for every asset from Phase 1 onward.
@@ -353,6 +354,13 @@ in §15 assumes this.
 
 - **Bevel everything.** `width` 0.008–0.04 m, 2–4 segments, angle limit 40°.
   An unbevelled box is the exact tell that makes a game look amateur.
+- **Bevel width ≈ 0.2–1% of the object's smallest dimension** (§B.3) — a 2 m door
+  and a 20 cm handle do not get the same bevel.
+- **Build geometry with `bmesh`, not `bpy.ops`** (§B.1). Operators need context
+  that background mode does not have; anything requiring a 3D View (Smart UV
+  Project) must be replaced with a written projection.
+- **Seed every random choice** from a hash of the asset name, so rebuilds are
+  byte-identical (§B.1).
 - **Shade smooth by angle, never smooth-all.** ~38° for furniture, ~50° for
   organic shapes, flat for glass panes and paper.
 - **No ngons on curved surfaces.** Triangulate on export, but keep quads in the
@@ -369,6 +377,12 @@ in §15 assumes this.
 
 Colour + roughness + metallic only. No image textures until §14, and when they
 arrive they live in the same library so everything stays consistent.
+
+Values must be physically plausible (§B.3): non-metal base colours inside
+30–240 sRGB, metals at `metallic = 1` with a reflectance colour (iron
+0.56/0.57/0.58, gold 1.0/0.77/0.34), roughness in the 0.05–0.95 range by family.
+Metal renders black until the scene has an environment map (§B.4) — that is a
+game-side job, but it is why the brass must be believable on its own.
 
 | key | hex | rough | metal | used for |
 |---|---|---|---|---|
@@ -480,28 +494,32 @@ The house is the thing the player stares at for hours, and right now the walls
 have no thickness, the trim is a thin box, and doorways are holes. This phase
 fixes the feeling of "not a real place".
 
+Dimensions follow UK domestic standards (Appendix B.2). The built house is
+**3.00 m to the ceiling with 2.10 m door openings** (`HouseLayout.ts`), so the kit
+matches those two numbers exactly and B.2 for everything else.
+
 Folder: `public/models/architecture/`
 
 ### 5.1 Walls — a modular kit, not one mesh per room
 
 1 m wide modules, tiled along a wall, so any room length works. Walls get
-**0.15 m thickness** — thickness is what makes door reveals and window sills read
+**0.13 m thickness** — thickness is what makes door reveals and window sills read
 as real. Cut openings by leaving module gaps and capping with a frame, never by
 deleting faces mid-wall.
 
 | file | size (m) w×d×h | parts | materials | tris |
 |---|---|---|---|---|
-| `wall_1m.glb` | 1.00 × 0.15 × 2.60 | two faces, top cap, 2 end caps, skirting notch at base | `paint_white` | 240 |
+| `wall_1m.glb` | 1.00 × 0.13 × 3.00 | two faces, top cap, 2 end caps, skirting notch at base | `paint_white` | 240 |
 | `wall_1m_cream.glb` | same | same | `paint_cream` | 240 |
 | `wall_1m_wet.glb` | same | same + tiled lower band to 1.2 m | `tile_white`, `tile_grout` | 480 |
 | `wall_1m_exterior.glb` | same | inner face, outer face, cavity line | `plaster`, `brick` or `render` | 320 |
-| `wall_end.glb` | 0.15 × 0.15 × 2.60 | vertical pilaster for open ends | matching | 120 |
-| `wall_corner_out.glb` | 0.15 × 0.15 × 2.60 | outer corner cap, mitred | matching | 160 |
-| `wall_corner_in.glb` | 0.15 × 0.15 × 2.60 | inner corner cap | matching | 140 |
-| `wall_dado.glb` | 1.00 × 0.15 × 2.60 | wall + dado rail at 1.0 m | `paint_white`, `oak` | 300 |
-| `wall_panel_raised.glb` | 1.00 × 0.15 × 2.60 | wainscot panelling below 1.1 m | `paint_white` | 520 |
-| `wall_damaged.glb` | 1.00 × 0.15 × 2.60 | hole, cracked plaster, exposed lath | `plaster`, `pine` | 700 |
-| `bulkhead.glb` | 1.00 × 0.15 × 0.35 | dropped ceiling beam/duct boxing | `paint_white` | 180 |
+| `wall_end.glb` | 0.13 × 0.13 × 3.00 | vertical pilaster for open ends | matching | 120 |
+| `wall_corner_out.glb` | 0.13 × 0.13 × 3.00 | outer corner cap, mitred | matching | 160 |
+| `wall_corner_in.glb` | 0.13 × 0.13 × 3.00 | inner corner cap | matching | 140 |
+| `wall_dado.glb` | 1.00 × 0.13 × 3.00 | wall + dado rail at 1.0 m | `paint_white`, `oak` | 300 |
+| `wall_panel_raised.glb` | 1.00 × 0.13 × 3.00 | wainscot panelling below 1.1 m | `paint_white` | 520 |
+| `wall_damaged.glb` | 1.00 × 0.13 × 3.00 | hole, cracked plaster, exposed lath | `plaster`, `pine` | 700 |
+| `bulkhead.glb` | 1.00 × 0.13 × 0.35 | dropped ceiling beam/duct boxing | `paint_white` | 180 |
 
 ### 5.2 Floors and ceilings
 
@@ -544,10 +562,10 @@ be walked through, be missing, or be hanging off a hinge.
 
 | file | size (m) | parts | materials | tris |
 |---|---|---|---|---|
-| `door_frame_std.glb` | 0.15 deep × 2.15 | jambs, head, stops, architrave both sides | `paint_white` | 380 |
-| `door_leaf_panel.glb` | 0.81 × 0.04 × 2.03 | stiles, rails, 2 raised panels | `paint_white` | 460 |
-| `door_leaf_flush.glb` | 0.81 × 0.04 × 2.03 | flush slab, shadow gap | `paint_white` | 140 |
-| `door_leaf_glazed.glb` | 0.81 × 0.04 × 2.03 | slab + 4 glass lights, glazing beads | `paint_white`, `glass_clear` | 520 |
+| `door_frame_std.glb` | 0.13 deep × 2.04 | jambs, head, stops, architrave both sides | `paint_white` | 380 |
+| `door_leaf_panel.glb` | 0.762 × 0.035 × 1.981 | stiles, rails, 2 raised panels | `paint_white` | 460 |
+| `door_leaf_flush.glb` | 0.762 × 0.035 × 1.981 | flush slab, shadow gap | `paint_white` | 140 |
+| `door_leaf_glazed.glb` | 0.762 × 0.035 × 1.981 | slab + 4 glass lights, glazing beads | `paint_white`, `glass_clear` | 520 |
 | `door_leaf_worn.glb` | 0.81 | as panel + chipped paint, scuffs, dented edge | + `grime` | 520 |
 | `door_leaf_exterior.glb` | 0.90 × 0.06 × 2.05 | panelled, letterbox, knocker, 2 hinges | `paint_white`/`walnut`, `brass` | 700 |
 | `door_bifold.glb` | 1.20 × 0.04 × 2.03 | 2 folding leaves, track, 4 hinges | `paint_white` | 600 |
@@ -602,8 +620,12 @@ in full (the reduced kit in §21 may drop them).
 Folder: `public/models/fixtures/`
 
 The premise of the game is cleaning a filthy house, so fixtures matter more than
-furniture: they are what the player scrubs. Every washable fixture gets a
-**filthy twin** (`<name>_filthy.glb`) with a grime material on the dirtiest faces.
+furniture: they are what the player scrubs.
+
+**Do not build `_filthy` twins for these.** Research (§B.12) says dirt should be a
+per-object mask plus decals, so one clean model is enough and it can visibly get
+cleaner as the player works. Only build a separate dirty model where the filth
+changes the silhouette (a bin overflowing, a blocked drain).
 
 ### 6.1 Kitchen
 
@@ -922,6 +944,9 @@ with real arch cut-outs sized from the spec.
 
 Folder: `public/models/vehicles/`
 
+Budget check (§B.6): body 8–12k, four wheels 2–4k, interior 1–3k — a car should
+land around 14k, which is the range mobile racers ship in.
+
 ### 10.1 Bodies
 
 | file | length | tris | parts |
@@ -1143,7 +1168,7 @@ enough for a street.
 
 | file | size | tris | notes |
 |---|---|---|---|
-| `tree_oak.glb` | 8 × 6 | 3,400 | trunk, 5 branches, 4 canopy clumps |
+| `tree_oak.glb` | 8 × 6 | 2,200 | trunk, 5 branches, 4 canopy clumps (was 3,400 — over budget, §B.7) |
 | `tree_birch.glb` | 7 × 4 | 2,800 | white trunk |
 | `tree_conifer.glb` | 6 × 3 | 2,400 | 6 stacked cones |
 | `tree_dead.glb` | 6 × 4 | 1,600 | bare branches — good for the "filthy" mood |
@@ -1241,7 +1266,9 @@ Rules:
 
 - **Bake in Blender** (`bpy.ops.object.bake`) from procedural nodes; do not paint.
 - **Box/Triplanar UV** for architecture, **unwrapped** for furniture and cars.
-- **KTX2** via the existing `TextureCompression.ts`; KTX2 halves VRAM on phones.
+- **WebP, not KTX2**, for textures at this size: KTX2 needs the `ktx` CLI which is
+  awkward to install headless without root, and the win below 512² is small (§B.9).
+  Revisit only if texture memory becomes a real problem.
 - **Budget:** no texture above 512², total texture memory under 40 MB.
 - Textures are additive: every material must still look acceptable without them,
   because the low-end path will ship flat colours.
@@ -1502,6 +1529,11 @@ Notes:
    rigging and animation are a different discipline from this one.
 6. **Attic/basement?** The stairs exist in §5.6 but the house is one floor.
    **Proposal: build the geometry, wire it only if the design calls for it.**
+7. **Ceiling height: keep 3.00 m or drop to a UK-typical 2.40 m?** The code builds
+   3.00 m rooms (§B.2); 2.40 would feel more ordinary and make furniture loom
+   larger, but it means retuning the camera and every wall module.
+   **Proposal: keep 3.00 m.** The kit is dimensioned for it and it reads grander,
+   which suits the premise.
 
 ---
 
@@ -1531,3 +1563,286 @@ Notes:
 | check performance | §18 |
 | decide what to build next | §19 |
 | check my work | §20 |
+
+---
+
+## Appendix B — research notes, with sources
+
+Gathered 23 Nov 2026 by six parallel web-research passes. These are the rules I
+did not know well enough before. Where a number here conflicts with a table
+above, **this appendix wins**, and the table should be corrected.
+
+### B.1 Writing Blender scripts at scale
+
+- **Prefer `bmesh` / `from_pydata` over `bpy.ops`.** Operators depend on context
+  and fail their `poll()` in background mode; BMesh edits mesh data directly and
+  has `bmesh.ops` for bevel/inset. Blender publishes no speed benchmark, but the
+  reliability difference is the real reason.
+  [BMesh API](https://docs.blender.org/api/4.2/bmesh.ops.html) ·
+  [operator gotchas](https://docs.blender.org/api/4.2/info_gotcha.html)
+- **`temp_override` supplies context values; it cannot invent a UI area.** So
+  anything that needs a 3D View — notably `bpy.ops.uv.smart_project` — is not
+  reliably available in a true headless run. **Consequence for §14: unwrap with
+  box/planar projection written in `lib.py`, not Smart Project.**
+  [Context API](https://docs.blender.org/api/4.2/bpy.types.Context.html)
+- **Deterministic randomness:** seed a local `random.Random` from a hash of the
+  asset id, never global state, so a rebuild produces identical files.
+  [Python random](https://docs.python.org/3.11/library/random.html)
+- **Modifier order for crisp low-poly:** Bevel (angle limit) → Weighted Normal →
+  Smooth by Angle (4.1+ replaced mesh auto-smooth).
+  [Bevel modifier](https://docs.blender.org/api/4.2/bpy.types.BevelModifier.html) ·
+  [shading manual](https://docs.blender.org/manual/en/4.2/scene_layout/object/editing/shading.html)
+- **Export with the hierarchy intact** (`export_hierarchy_flatten_objs=False`).
+  Flattening exists for non-decomposable transforms and is the fastest way to
+  lose parented doors, wheels and sockets.
+  [exporter API](https://docs.blender.org/api/4.2/bpy.ops.export_scene.html)
+
+### B.2 Real dimensions (UK domestic, metres)
+
+The house in code is **3.00 m to the ceiling** with **2.10 m door openings**
+(`HouseLayout.ts`, rooms are `size.y = 3`, doors `height: 2.1`). Build the kit to
+those two numbers and to the standards below for everything else.
+
+| element | value | note |
+|---|---|---|
+| internal door leaf | **0.762 × 0.035 × 1.981** | 838 mm leaf for main rooms |
+| door lining | 0.028–0.032 thick | depth matches wall |
+| internal wall | **0.125** finished | 100 mm block + 2 × 12.5 plaster |
+| external wall | 0.30–0.35 | cavity + insulation |
+| door opening (code) | **0.80–1.00 wide × 2.10 high** | leave 2.04 frame + 0.06 header |
+| window sill | 0.80–0.90 | escape windows: openable bottom ≤ 1.10 |
+| window head | 2.10 | |
+| kitchen worktop | **0.90 high × 0.60 deep** | 0.62 with upstand |
+| base carcass | 0.72 high × 0.56 deep, 0.15 plinth | 0.028–0.040 top |
+| wall units | 0.29–0.30 deep | 0.45–0.60 above worktop |
+| bath | **1.70 × 0.70** | 0.55–0.60 high |
+| WC | 0.36 × 0.64 | 0.75 clear in front (Part M) |
+| basin | 0.55 × 0.46 | |
+| stair rise | 0.150–0.220 | max pitch 42° |
+| stair going | 0.220–0.300 | 0.80 practical width |
+| skirting | 0.12 | design choice, not a standard |
+| cornice | 0.08 | design choice |
+| sockets / switches | centre 0.45–1.20 above floor | Part M |
+| ceiling (NDSS min) | 2.30 over 75% of area | the built house is 3.00 |
+
+Sources: [Approved Document M](https://assets.publishing.service.gov.uk/media/5a7f8a82ed915d74e622b17b/BR_PDF_AD_M1_2015_with_2016_amendments_V3.pdf) ·
+[Approved Document K](https://assets.publishing.service.gov.uk/media/60d5bdcde90e07716f516cfd/Approved_Document_K.pdf) ·
+[NDSS](https://www.gov.uk/government/publications/technical-housing-standards-nationally-described-space-standard/technical-housing-standards-nationally-described-space-standard) ·
+[standard door sizes](https://www.jbkind.com/info-centre/useful-door-information/standard-door-sizes) ·
+[kitchen install guide](https://www.homebase.co.uk/medias/kitchens-by-homebase-product-installation-guide.pdf)
+
+**Open question (see §21):** a 3.00 m ceiling is generous for a UK house. Keeping
+it reads grander and costs nothing; dropping to 2.40 means retuning the camera and
+every wall module. Decide before Phase 1, not after.
+
+### B.3 PBR values that make a surface believable
+
+- **Non-metal base colour:** most albedos live in **30–240 sRGB** (0.01–0.87
+  linear); keep a floor around 50 sRGB for anything but deep shadow.
+  Fresh wood ≈ 0.35–0.42 linear, weathered wood ≈ 0.12–0.16.
+  [Substance PBR guide](https://www.adobe.com/learn/substance-3d-designer/web/the-pbr-guide-part-2) ·
+  [rFactor PBR guide](https://docs.studio-397.com/pages/viewpage.action?pageId=37945386)
+- **Metals:** `metallic = 1`, base colour is the reflectance — iron
+  (0.560, 0.570, 0.580) linear, gold (1.000, 0.766, 0.336). Intermediate metallic
+  values are for transitions like rust, not "extra shine".
+  [Unreal PBR](https://dev.epicgames.com/documentation/unreal-engine/physically-based-materials-in-unreal-engine)
+- **Roughness starting points:** wood 0.60–0.90 raw, 0.20–0.40 varnished;
+  fabric 0.70–1.00; glazed ceramic 0.05–0.25, matte 0.40–0.80; metal 0.20–0.60.
+  [Roblox material reference](https://create.roblox.com/docs/en-us/art/modeling/material-reference)
+- **Bevel width ≈ 0.2–1% of the object's smallest dimension**, then judge at the
+  real camera distance. Model bevels that catch a highlight; fake the rest.
+  [Polycount](https://polycount.com/discussion/215331/when-should-i-bevel)
+- **Metal with no environment map renders black.** The game must have
+  `scene.environment` before brass and chrome can work (§B.4).
+  [three.js #9228](https://github.com/mrdoob/three.js/issues/9228)
+
+**Action for §3.4:** the palette is roughly in range, but check each value against
+this before Phase 1 — our `walnut` is at the dark end and `brass` needs verifying.
+
+### B.4 three.js r165 rendering (the assets assume this)
+
+- **Tone mapping: `AgXToneMapping`, exposure 1.0**, tuned 0.8–1.2. `Neutral` does
+  not exist until r170; `ACESFilmic` shifts saturated colours. AgX arrived in r160.
+  [r165 constants](https://raw.githubusercontent.com/mrdoob/three.js/r165/src/constants.js) ·
+  [r160 release](https://github.com/mrdoob/three.js/releases/tag/r160)
+- **1–3 dynamic lights.** A shadow-casting point light costs six shadow renders;
+  prefer one directional/spot with modest shadow map, and fake the rest.
+  [three.js shadows](https://threejs.org/manual/en/shadows.html)
+- **Environment:** one small HDR (512×256 or 1024×512) through
+  `PMREMGenerator.fromEquirectangular()` once, assigned to `scene.environment`.
+  [PMREM docs](https://threejs.org/docs/pages/PMREMGenerator.html)
+- **Contact shadows:** `ShadowMaterial` on the floor, or a blob quad under
+  furniture — cheaper than a shadow-casting point light.
+  [ShadowMaterial](https://threejs.org/docs/pages/ShadowMaterial.html)
+- **AO maps need `uv1`** in r152+ (the attribute was renamed from `uv2`, and the
+  automatic copy was removed). This is exactly why **vertex-colour AO (§2.4) is
+  the better call** for us: no second UV set, no extra texture.
+  [migration guide](https://github.com/mrdoob/three.js/wiki/Migration-Guide)
+
+### B.5 glTF export pitfalls (Blender 4.2 → three.js r165)
+
+- Base colour and emissive maps export as **sRGB**; metal/rough and normal maps
+  must be **Non-Color**. Never gamma-correct them by hand.
+  [Blender glTF manual](https://docs.blender.org/manual/en/4.2/addons/import_export/scene_gltf2.html)
+- **Backface Culling in Blender is the inverse of glTF `doubleSided`.** Tick it for
+  closed solids, leave it off for curtains and leaf cards.
+- **Tangents:** export them if we ever ship normal maps, otherwise three.js falls
+  back to derivative tangents and shading can seam.
+- **Animations:** in Actions mode an action must be stashed on an NLA track or it
+  will not export at all. One track per clip, names in `AN_*` (§15.1).
+- **Node names are not unique IDs** — the loader sanitises and suffixes duplicates.
+  Never rely on `getObjectByName` for something that might be duplicated.
+- `KHR_materials_emissive_strength` and `KHR_texture_transform` are supported in
+  r165, so lamp emissive levels and UV offsets can be authored in Blender.
+
+### B.6 Cars: what actually reads as a car
+
+- **Budget for a mobile-ish player car: 11k–19k tris total** — body 8–12k, wheels
+  2–4k, interior 1–3k when the camera can see it.
+  [Unity discussion](https://discussions.unity.com/t/what-would-be-an-ideal-poly-count-for-a-mobile-racing-game/673701) ·
+  [BeamNG workflow](https://beamng.com/game/news/blog/a-look-at-vehicle-workflow-part-1)
+- **Build one continuous shell, then cut the panels.** Cutting first is what
+  produces wobbly reflections across door seams.
+- **Boxy-looking cars** come from: flat sides where the reference curves, generic
+  roof and bonnet lines, wrong wheel size or position, angular arches.
+- **Interiors:** a chase camera can get away with tinted glass and a few shapes.
+  Our camera can look through the windscreen, so a simplified cabin is worth it.
+- **Damage:** vertex deformation plus detachable panels is the arcade-standard
+  cheat; nobody expects real crumple.
+  [iRacing damage](https://www.iracing.com/road-new-damage/)
+
+### B.7 Vegetation that does not look like a green ball
+
+- **Avoid stacks of big alpha cards on mobile.** Masked pixels still cost shading,
+  and overdraw multiplies; geometry leaf clumps are usually cheaper and read with
+  more volume at our distances.
+  [Epic mobile guidelines](https://dev.epicgames.com/documentation/unreal-engine/performance-guidelines-for-mobile-devices-in-unreal-engine)
+- **Counts:** trees around 500–2,000 tris (more for a hero tree), bushes
+  200–800, hedges budgeted per reusable segment.
+- **Silhouette first:** species-shaped outline, visible trunk and branches, uneven
+  crown lobes with gaps between them.
+  [Beyond Extent foliage](https://www.beyondextent.com/course/introduction-to-foliage)
+- **Wind:** vertex-shader offset weighted by vertex height, with a per-instance
+  phase so nothing moves in lockstep. Cheap and convincing.
+  [GPU Gems 3, ch.16](https://developer.nvidia.com/gpugems/gpugems3/part-iii-rendering/chapter-16-vegetation-procedural-animation-and-shading-crysis)
+
+**Action for §12.4:** `tree_oak` at 3,400 tris is over budget — target ≤ 2,200 and
+drop `grass_tuft` cards except where they matter close up.
+
+### B.8 Art direction: rich but neglected
+
+- **60/30/10 surface split** — quiet dominant materials, secondary variation, one
+  saturated accent. Our teal-on-walnut palette already follows this; keep the
+  accent to a few linked objects, not spread evenly.
+- **Dirt has a cause.** Put it at contact points, corners, behind furniture, around
+  a leak, along walked routes — and leave some surfaces clean so the dirt reads.
+  [Surveillance room breakdown](https://gamesartist.co.uk/surveillance-room/)
+- **One dominant motivated light** (daylight through windows), soft fill, lamps
+  tone-varied rather than all equal.
+- **Consistency beats realism:** House Flipper 2 abandoned photorealism for a
+  coherent style because mixed fidelity looked worse.
+  [Interview](https://www.gamesindustry.biz/building-house-flipper-2-from-the-ground-up)
+- References worth studying for layered domestic space: *Gone Home*, *Unpacking*,
+  *Viscera Cleanup Detail* (heightened mess, not a realism benchmark).
+
+### B.9 Compression and validation decisions
+
+- **KTX2 needs the `ktx` CLI** (KTX-Software ≥ 4.3) on `PATH`; there is no
+  official static binary or AppImage, and the Linux tarball may still want system
+  libraries. For textures at 512² and below the win is small.
+  **Decision: skip KTX2, ship WebP via `gltf-transform webp`.** Revisit only if
+  texture memory becomes a real problem.
+  [KTX-Software releases](https://github.com/KhronosGroup/KTX-Software/releases) ·
+  [gltf-transform toktx](https://raw.githubusercontent.com/donmccurdy/glTF-Transform/v4.2.1/packages/cli/src/transforms/toktx.ts)
+- **Meshopt over Draco** for us: smaller decoder, much faster decode (~1–3 GB/s),
+  and `loader.setMeshoptDecoder()` is one line. Draco stays the fallback if file
+  size ever matters more than decode time.
+  [meshoptimizer](https://github.com/zeux/meshoptimizer/blob/master/js/README.md)
+- **Validate in the build:** `npm i -D gltf-validator`, call `validateBytes()`,
+  fail the script when `report.issues.numErrors > 0`. That is the check behind
+  §16.4 and it catches broken GLBs before the game does.
+  [validator node docs](https://github.com/KhronosGroup/glTF-Validator/blob/main/node/README.md)
+
+### B.10 Draw calls and batching (phones)
+
+- **Target under ~100 draw calls and ~100k visible vertices per frame.** Don McCurdy
+  gives those as sensible ceilings; real mobile games have shipped at 40–120.
+  ([three.js forum](https://discourse.threejs.org/t/bad-performance-when-loading-more-than-3500-meshes-into-the-scene/63960/4),
+  [Robot Invader](https://robotinvader.com/blog?p=438))
+- **`InstancedMesh`** collapses repeats of one geometry+material into one call — use
+  it for trash, books, fence panels, foliage, repeat props.
+- **`mergeGeometries`** only helps when the merged parts **share one material**;
+  material groups each become a draw call. Merge walls by material, and chunk the
+  result spatially or the merged bounding box defeats frustum culling.
+  ([BufferGeometryUtils](https://github.com/mrdoob/three.js/blob/dev/examples/jsm/utils/BufferGeometryUtils.js))
+- **Measure, don't guess:** `renderer.info.render.drawCalls` and `triangles` are the
+  numbers that matter. Atlas only when different textures are what prevents batching.
+
+### B.11 Lightmaps: available, but not first
+
+Baking a lightmap in Blender means a **second, non-overlapping UV set**, a target
+image, and a Diffuse bake with Direct+Indirect enabled and Color disabled so only
+lighting is stored. Margin/padding is mandatory or seams bleed at the edges.
+In three.js r152+, that map is `lightMap` with `channel = 1` (`uv1`), and its colour
+space must match what was saved — lightmaps are usually linear/float.
+([Blender baking](https://docs.blender.org/manual/en/4.0/render/cycles/baking.html),
+[MeshStandardMaterial](https://threejs.org/docs/pages/MeshStandardMaterial.html))
+
+**Decision:** vertex-colour AO (§2.4) first — it needs no UV2 and no texture. A real
+lightmap pass is a stretch goal after Phase 9, and only if the lighting still looks
+flat with one motivated light plus environment.
+
+### B.12 How dirt should actually work
+
+Four techniques, ranked for our size:
+
+| technique | cost | use it for |
+|---|---|---|
+| **projected decals** | no UVs, independent objects | ambient stains, splash marks, cobwebs |
+| **per-object mask texture** | one 256–512 px canvas per washable | anything the player scrubs, with progress |
+| vertex-painted mask | free to draw, limited by vertex density | large walls, coarse surfaces |
+| triplanar grime | extra samples, no UVs | background dirt on awkward geometry |
+
+The cheapest convincing setup for a small three.js game: **one canvas-baked
+grayscale mask per washable object**, blended over the clean material; raycast the
+spray/mop, take `intersection.uv`, stamp soft circles; count remaining dirty texels
+to drive a percentage. **PowerWash Simulator's own rules** are the reference for
+feel: per-object progress, visible percentage, and a forgiving completion threshold
+(a fiddly object can count as done at ~90%).
+([FuturLab](https://www.futurlab.co.uk/news/the-powerwash-simulator-demo-update-is-now-live),
+[Eurogamer](https://www.eurogamer.net/powerwash-simulator-developer-diary-discusses-cleanliness-thresholds-dirt-design),
+[CanvasTexture](https://threejs.org/docs/pages/CanvasTexture.html))
+
+**Action for Phase 9:** build dirt as masks+decals, not as bespoke "dirty model"
+variants. The `_filthy` twins in §6 then become unnecessary — one model plus a mask
+is cheaper and animates as it is cleaned.
+
+### B.13 Tiling textures at 256–512 px
+
+- **Two scales of variation:** a low-frequency colour/roughness layer over a regular
+  tile pattern. Big obvious features are what make repetition read.
+  ([Polycount](https://polycount.com/discussion/225641/avoiding-texture-repetition-on-big-walls))
+- **Dirt belongs in grout and joints**, irregular, not a uniform dark outline around
+  every tile. Tile and grout need **different roughness** or the surface reads fake.
+  ([Polycount tile critique](https://polycount.com/discussion/216017/moroccan-tile-material))
+- **Restrained normal maps.** A smooth tile with a lumpy normal looks like plastic.
+- **Bake the pattern periodic before baking to image:** feed 4D noise the UV mapped
+  around a torus, or use Blender's 4D Noise option, so opposite edges match exactly.
+  Then bake from a plane whose UVs fill 0–1. Check the result by tiling it 3×3 —
+  especially normal and roughness, where seams show first.
+  ([tileable noise](https://blender.stackexchange.com/questions/135437/how-to-make-tileable-procedural-noise-texture))
+
+### B.14 What the research changed in this plan
+
+| decision | before | now | phase |
+|---|---|---|---|
+| geometry authoring | `bpy.ops` wherever | `bmesh` first; UI-dependent ops avoided | 1 |
+| walls | 0.15 × 2.60 | 0.13 × 3.00 (matches the code) | 1 |
+| doors | 0.81 × 2.03 | 0.762 × 1.981 leaf, 2.04 frame | 1 |
+| shadows | baked AO as a nice-to-have | **required on every asset** | all |
+| textures | KTX2 | WebP, KTX2 skipped | 10 |
+| tree budget | 3,400 tris | 2,200 tris, geometry over cards | 8 |
+| car budget | unstated | ~14k total | 6 |
+| dirt | `_filthy` model twins | per-object masks + decals | 9 |
+| validation | GLB header check | Khronos `gltf-validator` in the build | 1 |
+| lighting | unspecified | AgX, exposure 1.0, 1–3 lights, env map | 1 |
