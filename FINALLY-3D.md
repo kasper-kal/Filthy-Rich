@@ -834,8 +834,9 @@ section: `decor_living`, `decor_dining`, `decor_bedroom`, `decor_study`,
 `decor_entry`). Every asset is AO-baked, UV-mapped and pruned.
 
 `src/world/DecorLayout.ts` places **110 props across all eight rooms** and
-`Room.createDecor()` merges them **per material**, so the whole dressing of the
-house costs about a dozen draw calls instead of 110.
+`Room.createDecor()` merges them **per material** (22 shared materials across
+all 222 primitives), so the whole dressing of the house costs 22 draw calls
+instead of 110.
 
 | room | what is in it |
 |---|---|
