@@ -187,8 +187,12 @@ files into `$HOME/blender-libs`. **Blender will not start without the library pa
 
 ```bash
 export LD_LIBRARY_PATH=$HOME/blender-libs/usr/lib/x86_64-linux-gnu
-$HOME/blender/blender --background --python tools/blender/build_<group>.py
+$HOME/blender/blender --background --factory-startup --python-exit-code 1 \
+  --python tools/blender/build_<group>.py
 ```
+
+`--python-exit-code 1` is not optional: without it a script that raises still
+exits 0 and the build looks fine (§2.7).
 
 Build a subset by naming assets after `--`:
 
@@ -227,6 +231,92 @@ Blender-render review loop. Instead:
 
 `tools/blender/build_all.py` imports each group module and runs it in order, then
 writes `public/models/models.manifest.json` (§16.3). One command, whole library.
+
+### 2.3 Installed toolkit (verified in this VM, 23 Nov 2026)
+
+Blender 4.2 ships with only 14 add-ons (glTF, FBX, Cycles, Node Wrangler,
+Rigify…). Seven more were installed from extensions.blender.org. Network access
+must be switched on once before the extension CLI will work:
+
+```bash
+export LD_LIBRARY_PATH=$HOME/blender-libs/usr/lib/x86_64-linux-gnu
+B=$HOME/blender/blender
+$B --background --factory-startup --python-expr \
+  "import bpy; bpy.context.preferences.system.use_online_access=True; bpy.ops.wm.save_userpref()"
+$B --background --command extension sync
+$B --background --command extension install archimesh -e
+```
+
+Installed, with the module name to pass to `addon_utils.enable()` and what the
+headless test actually did:
+
+| id | module | headless result | used for |
+|---|---|---|---|
+| `archimesh` | `bl_ext.blender_org.archimesh` | `archimesh_room()` built 15 objects ✓ | proportions reference only |
+| `sapling_tree_gen` | `bl_ext.blender_org.sapling_tree_gen` | `curve.tree_add()` built a tree ✓ | trees, Phase 8 |
+| `cell_fracture` | `bl_ext.blender_org.cell_fracture` | cube → 12 shards ✓ | `broken_item`, `drywall_piece`, Phase 4 |
+| `ivygen` | `bl_ext.blender_org.ivygen` | operator registered ✓ | wall vines, Phase 8 |
+| `extra_mesh_objects` | `bl_ext.blender_org.extra_mesh_objects` | round-cube / lathe primitives ✓ | base shapes with good edge flow |
+| `extra_curve_objectes` | `bl_ext.blender_org.extra_curve_objectes` | operator registered ✓ | cables, hoses, pipe runs |
+| `boltfactory` | `bl_ext.blender_org.boltfactory` | operator registered ✓ | bolts, fittings, Phase 7 |
+
+**Archimesh is reference, not shipping stock.** It makes dated, blocky rooms with
+its own material slots and no bevels. Use it to check proportions against a real
+door or kitchen run; the §5 kit is still what gets exported.
+
+### 2.4 Ambient occlusion in vertex colours — the highest-value trick
+
+Verified end to end: import a GLB, bake AO into a colour attribute, export — 0.3
+seconds for the sofa, `COLOR_0` present in the output.
+
+```python
+sc = bpy.context.scene
+sc.render.engine = 'CYCLES'
+sc.cycles.device = 'CPU'
+sc.cycles.samples = 16
+sc.render.bake.use_pass_direct = False
+sc.render.bake.use_pass_indirect = False
+if not mesh.color_attributes:
+    mesh.color_attributes.new(name='AO', type='BYTE_COLOR', domain='CORNER')
+bpy.ops.object.bake(type='AO', target='VERTEX_COLORS')
+```
+
+Why this matters: glTF carries it as `COLOR_0`, and three.js multiplies vertex
+colour into the base colour automatically. Every bevel, cushion seam, drawer
+reveal and skirting joint gets soft contact shadow **without a texture, a second
+UV set, or an extra draw call**. It is the cheapest realism upgrade in the whole
+pipeline and belongs in `lib.py` for every asset from Phase 1 onward.
+
+Two rules: export one colour set only (`export_all_vertex_colors=False`, or the
+file doubles), and finish with `prune` (below) to drop the padding.
+
+### 2.5 Mesh optimisation: prune yes, optimize no
+
+`npx @gltf-transform/cli@4 prune` took `sofa.glb` from 134.6 KB to 104.6 KB
+(−22%) and kept every node name and material exactly. Safe on game assets.
+
+**Never run `optimize`, `join`, `flatten` or `instance` on these files.** They
+merge and rename nodes, and the game finds doors, wheels, sockets and parts by
+name. If size is ever the problem, `weld` + `simplify` with a conservative ratio,
+or `meshopt` compression — the latter only after `MeshoptDecoder` is registered
+in the loader, which is a code change, not an asset change.
+
+### 2.6 Free textures, no key, scriptable
+
+- **Poly Haven** — `https://api.polyhaven.com/assets?t=textures&c=<category>`,
+  then `/files/<id>`. CC0, no key, `User-Agent` header required.
+- **ambientCG** — `https://ambientcg.com/api/v3/assets?...`. CC0, no key.
+
+Both verified reachable from this VM. Pull 1K maps and downscale to 512² (§14);
+never ship what the library gives you at 8K.
+
+### 2.7 CLI flags that matter
+
+- `--python-exit-code 1` — exit non-zero when the script raises. Without it a
+  broken build looks like a successful one. **Use it on every build script.**
+- `--factory-startup` — ignore user preferences, so builds are reproducible.
+- `--addons <list>` — enable bundled add-ons for one run.
+- `--command extension install|list|sync` — manage extensions headlessly.
 
 ---
 
@@ -267,6 +357,8 @@ in §15 assumes this.
   organic shapes, flat for glass panes and paper.
 - **No ngons on curved surfaces.** Triangulate on export, but keep quads in the
   `.blend` so the smooth shading stays clean.
+- **Bake AO into vertex colours on every asset** (§2.4). It is free at runtime
+  and it is what makes bevels and joints read.
 - **No interior faces.** Delete hidden geometry; at 47k tris the furniture is
   already paying for faces nobody can see.
 - **Add the "second read".** Every piece needs one small detail that rewards a
@@ -1251,6 +1343,8 @@ def shade(obj, angle=38)
 def mat(key)                                               # from the palette
 def socket(name, loc)
 def collider(obj, kind="box")
+def bake_ao(obj, samples=16)          # vertex-colour AO, recipe in §2.4
+def enable_extension(slug)            # bl_ext.blender_org.<slug>
 def export_glb(objs, path, animations=False)
 def report(name, tris, path)                               # prints "wrote ..."
 ```
@@ -1378,6 +1472,8 @@ Notes:
 
 0. The phase is named and ticked `[~]` in §0.2 before work starts.
 1. Build script runs clean; every asset logs `wrote <name> <tris> tris`.
+1b. Every asset carries vertex-colour AO (§2.4) and has been through
+   `npx @gltf-transform/cli@4 prune` (§2.5).
 2. `node tools/validate-models.mjs` exits 0.
 3. `npx tsc --noEmit` → 0 · `npm run build` → 0 · `npm test` → all pass.
 4. In game: new meshes visible, old procedural placeholders gone (search the
