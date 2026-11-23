@@ -10,21 +10,103 @@ Legend: `[x]` done and shipped · `[ ]` to build · `[~]` exists but needs redoi
 
 ---
 
-## §0. How to use this file
+## §0. How to use this file — and the Phases Of Creation™
 
-- **§1–§4 are law.** Axes, pivots, naming, materials, budgets. Apply them to
-  every asset without being told again.
-- **§5–§14 are the inventory.** One table per group, one row per file.
-- **§15–§18 are the plumbing.** Animation, collisions, build scripts, integration.
-- **§19–§21 are the order of work, the done-checks, and the open questions.**
+The steerer does not write briefs. They type **"Start Phase N"**. That is the
+whole request, and this file is the brief that answers it.
 
-Rules of engagement:
+A **phase** is one self-contained batch of models: one build script, one code
+integration, one commit. Ten phases, in order, cover everything the game needs.
+Each phase leaves the game playable and visibly better, so a phase can be
+skipped, paused or reordered without breaking anything.
 
-1. Never add an asset that has no row. Add the row first, then build it.
-2. Never rename a file that code already loads. New names only for new groups.
-3. Every phase ends with a build, a validation run, a visual check, and a push.
-4. If a piece needs a code change to appear, that change is part of the phase —
-   not a follow-up.
+Where things live:
+
+- **§0.2 is the phase index.** It is the only list of phases that counts.
+- **§0.3 is the runbook** — what "Start Phase N" actually causes me to do.
+- **§1–§4 are law.** Axes, pivots, naming, materials, budgets.
+- **§5–§14 are the phase specs.** One section per phase, one row per asset.
+- **§15–§18 are the plumbing.** Animation, collisions, build scripts, wiring.
+- **§19–§21** are dependencies, the done-checks, and the open questions.
+
+### 0.1 What "Start Phase N" means
+
+| the steerer types | what I do |
+|---|---|
+| `Start Phase 3` | build everything in §7, wire it into the game, verify, commit, push, tick it |
+| `Continue Phase 3` | resume at the first unticked asset row in §7 |
+| `Redo Phase 3` | rebuild it from scratch, replacing what already exists |
+| `Phase 3 only` | build and verify, but make no code change outside §17's row for it |
+| anything vague | ask which phase — plainly, once — then proceed |
+
+Rules that never change:
+
+1. **One phase per turn.** Finish it, report, stop. No starting Phase 4 inside
+   Phase 3's turn.
+2. **"Done" is §20, not "the files exist".** A phase that has models but is not
+   wired into the game is not done.
+3. **Phases are additive.** Never rewrite an earlier phase's assets to make a
+   later one work; fix the later one.
+4. **The tick lives here.** When a phase finishes, its row in §0.2 and its
+   heading in §5–§14 both change to `[x]`, in the same commit.
+
+### 0.2 Phases Of Creation™ — master index
+
+| Phase | Name | Spec | New models | Folder | Depends on | Status |
+|---|---|---|---|---|---|---|
+| 1 | **Shell** | §5 | 66 | `architecture/` | — | `[ ]` |
+| 2 | **Fixtures** | §6 | 56 | `fixtures/` | 1 | `[ ]` |
+| 3 | **Decor** | §7 | 78 | `decor/` | 1, 2 | `[ ]` |
+| 4 | **Trash** | §8 | 39 | `trash/` | 1 (floors) | `[ ]` |
+| 5 | **Cleaning kit** | §9 | 21 | `tools/` | — | `[ ]` |
+| 6 | **Vehicles** | §10 | 27 | `vehicles/` | — | `[ ]` |
+| 7 | **Garage** | §11 | 55 | `repair/` | 6 | `[ ]` |
+| 8 | **Exterior** | §12 | 51 | `exterior/`, `vegetation/` | 1 | `[ ]` |
+| 9 | **Grime** | §13 | 19 | `grime/`, `textures/grime/` | 1, 2 | `[ ]` |
+| 10 | **Textures** | §14 | 7 + ~35 maps | `textures/` | 1–3 | `[ ]` |
+
+**~419 models across ten phases.** Separately, 22 furniture pieces are already
+shipped (§1.2) and are not part of any phase.
+
+Progress: **0 / 10 phases complete.**
+
+Smallest useful first step: Phase 1. Biggest visible jump for the least work:
+Phase 1, then 5, then 4. Phases 4, 5 and 6 are independent of everything and can
+be swapped freely if the steerer wants something else first.
+
+### 0.3 The runbook — what happens when a phase starts
+
+Followed in this order, every time, no exceptions:
+
+1. **Read the phase spec** (§5–§14) end to end, plus §3 rules and §17's row.
+2. **Check the toolkit.** `tools/blender/lib.py` and `tools/validate-models.mjs`
+   are built in Phase 1; if a later phase finds them missing, build them first
+   from §16.1 and §16.4.
+3. **Write the build script** `tools/blender/build_<group>.py`: one function per
+   asset, cleared scene per asset, `wrote <name> <tris> tris` on success.
+4. **Run it.** Every asset in the phase table must be produced; fix tracebacks
+   rather than skipping rows.
+5. **Validate.** `node tools/validate-models.mjs` must exit 0 (budgets, names,
+   palette, manifest).
+6. **Wire it in** using §17's row for that phase. Replace the placeholder code —
+   do not leave both paths alive behind a flag unless the phase says so.
+7. **Check the build.** `npx tsc --noEmit`, `npm run build`, `npm test` — all
+   clean. No skipped tests, no weakened assertions to get there.
+8. **Look at it.** Dev server, the actual room, phone profile too. Placeholders
+   gone, new meshes present, frame rate not worse than before.
+9. **Commit and push** with the *why*, on branch `freebuff/5c3b7bc8617797a07a1d90c2`.
+10. **Tick it:** this table, the phase heading, and a line in the log below.
+11. **Refresh the preview** and report in plain words: what the player will see
+    differently, and anything that did not work.
+
+Never inside a phase: renaming files that code already loads, editing brand
+assets, starting the next phase, or committing with a check failing.
+
+### 0.4 Phase log
+
+| Phase | Finished | Commit | Note |
+|---|---|---|---|
+| — | — | — | nothing built yet |
 
 ---
 
@@ -300,6 +382,8 @@ code between scripts — extend `lib.py`.
 
 ## §5. Phase 1 — the house shell `[ ]` (biggest visual win)
 
+**Status:** `[ ]` not started · **Depends on:** nothing · **Done when:** every room is built from wall modules with thickness, doors and windows are real objects, and no flat wall plane is left in the scene graph.
+
 The house is the thing the player stares at for hours, and right now the walls
 have no thickness, the trim is a thin box, and doorways are holes. This phase
 fixes the feeling of "not a real place".
@@ -414,12 +498,14 @@ be walked through, be missing, or be hanging off a hinge.
 | `stair_nosing.glb` | 1 m | oak strip, anti-slip grooves | 120 |
 
 Stairs are optional for now — the house is one floor — but the geometry is cheap
-and the attic/basement can use it later. Build them only if §19 puts them in the
-current phase.
+and the attic/basement can use it later. Build them only if Phase 1 is being run
+in full (the reduced kit in §21 may drop them).
 
 ---
 
 ## §6. Phase 2 — fixtures and appliances `[ ]`
+
+**Status:** `[ ]` not started · **Depends on:** Phase 1 (walls for them to stand against) · **Done when:** kitchen and bathroom are furnished, and every washable fixture has a filthy twin the cleaning code can swap in.
 
 Folder: `public/models/fixtures/`
 
@@ -507,6 +593,8 @@ furniture: they are what the player scrubs. Every washable fixture gets a
 ---
 
 ## §7. Phase 3 — decor, so rooms look lived in `[ ]`
+
+**Status:** `[ ]` not started · **Depends on:** Phases 1–2 · **Done when:** all eight rooms have props on and around their furniture, and no room reads as empty.
 
 Folder: `public/models/decor/`
 
@@ -627,6 +715,8 @@ softness; anything more is wasted on a phone.
 
 ## §8. Phase 4 — trash, clutter and spills `[ ]`
 
+**Status:** `[ ]` not started · **Depends on:** Phase 1 (floors to land on) · **Done when:** all 23 trash types load as models instead of boxes, with spawn behaviour and physics unchanged.
+
 `TrashManager.ts` draws coloured boxes from a size table. There are **23 types**;
 keep the names exact or the spawn table breaks. Folder: `public/models/trash/`.
 
@@ -688,6 +778,8 @@ Liquid spills are decals, not meshes (§13). Exception: the three "chunky" spill
 
 ## §9. Phase 5 — the cleaning kit (held, first person) `[ ]`
 
+**Status:** `[ ]` not started · **Depends on:** nothing · **Done when:** the four tools and the gloved hand are models in the player's hands, and the old primitive builders are deleted.
+
 `CleaningSystem` has exactly four tools: `spray`, `mop`, `vacuum`, `trash_bag`.
 `DiegeticHUD.ts` builds the first two from primitives. These are the objects on
 screen for the entire game, so they get the most geometry per centimetre in the
@@ -725,6 +817,8 @@ Folder: `public/models/tools/`
 ---
 
 ## §10. Phase 6 — vehicles `[ ]`
+
+**Status:** `[ ]` not started · **Depends on:** nothing · **Done when:** every car body is a model with an interior, the wheels still sit exactly where the spec puts them, and damage overlays attach by name.
 
 `VehicleVisual.ts` builds cars from 8 boxes. You stare at the car constantly, so
 this is the second biggest visual win after the house.
@@ -803,6 +897,8 @@ player looks through the windscreen they see seats or they see nothing.
 ---
 
 ## §11. Phase 7 — garage and repair kit `[ ]`
+
+**Status:** `[ ]` not started · **Depends on:** Phase 6 (cars to repair) · **Done when:** the repair bay is furnished and every tool in the catalogue has a visual.
 
 Folder: `public/models/repair/`
 
@@ -888,6 +984,8 @@ Folder: `public/models/repair/tools/`
 
 ## §12. Phase 8 — exterior, garden and street `[ ]`
 
+**Status:** `[ ]` not started · **Depends on:** Phase 1 (exterior wall modules) · **Done when:** houses, gardens and street props are models, and the view out of a window is no longer empty geometry.
+
 Folder: `public/models/exterior/` and `public/models/vegetation/`.
 
 ### 12.1 Houses
@@ -969,6 +1067,8 @@ enough for a street.
 
 ## §13. Phase 9 — grime, damage and decals `[ ]`
 
+**Status:** `[ ]` not started · **Depends on:** Phases 1–2 (surfaces to sit on) · **Done when:** dirt decals and grime meshes attach to surfaces and visibly fade as the player cleans.
+
 Filth is the premise. Geometry alone cannot sell it; this is where the game's
 "before/after" payoff lives.
 
@@ -1020,6 +1120,8 @@ handle it: `material.userData.filthMix` driven by `CleaningSystem`.
 ---
 
 ## §14. Phase 10 — textures and the material library `[ ]`
+
+**Status:** `[ ]` not started · **Depends on:** Phases 1–3 · **Done when:** every material family has its maps and the flat-colour path still works on low-end devices.
 
 Until now everything is flat colour. That is consistent, but it caps how good the
 game can look. Textures are the next step, and they must be small and few.
@@ -1246,31 +1348,35 @@ disposeGroup(g: THREE.Group): void
 
 ---
 
-## §19. Order of work and effort
+## §19. Dependencies, effort and what to skip
 
-Each phase is a self-contained chunk of work. Estimated Blender scripting time for
-me, per phase, assuming `lib.py` exists:
-
-| # | phase | assets | effort | why now |
+| # | Phase | Depends on | Effort | Why it sits here |
 |---|---|---|---|---|
-| 1 | architecture shell | ~40 | 1 long session | fixes walls, trim, doors, windows — the "cheap" feeling |
-| 2 | trash | ~37 | 1 session | the game's core interaction, currently boxes |
-| 3 | cleaning tools | ~21 | 1 session | always on screen |
-| 4 | fixtures | ~45 | 1–2 sessions | bathrooms/kitchens are where cleaning happens |
-| 5 | decor | ~60 | 1–2 sessions | makes rooms read as lived-in |
-| 6 | vehicles | ~30 | 1–2 sessions | the car is the second thing you stare at |
-| 7 | garage/repair | ~50 | 1 session | half the game loop |
-| 8 | exterior | ~55 | 1–2 sessions | only matters once you can see outside |
-| 9 | grime | ~40 | 1 session | the payoff, needs surfaces to sit on |
-| 10 | textures | ~40 maps | 1 session | last, because flat colour already works |
+| 1 | Shell | — | one long session | walls, trim, doors and windows are the reason the house reads as cheap; everything else sits on top of them |
+| 2 | Fixtures | 1 | 1–2 sessions | kitchens and bathrooms are where cleaning actually happens |
+| 3 | Decor | 1, 2 | 1–2 sessions | the cheapest way to stop rooms feeling unfurnished |
+| 4 | Trash | 1 | 1 session | the core interaction; currently coloured boxes |
+| 5 | Cleaning kit | — | 1 session | always on screen, so it must look right early |
+| 6 | Vehicles | — | 1–2 sessions | the car is the second thing the player stares at |
+| 7 | Garage | 6 | 1 session | the other half of the loop |
+| 8 | Exterior | 1 | 1–2 sessions | only matters once the player can see outside |
+| 9 | Grime | 1, 2 | 1 session | the payoff of the game, needs surfaces to sit on |
+| 10 | Textures | 1–3 | 1 session | last, because flat colour already works |
 
-Order is deliberate: each phase makes the previous one look better, and nothing
-later has to be redone because an earlier phase changed shape or scale.
+Notes:
 
----
+- **Phases 4, 5 and 6 need nothing.** If the steerer wants a quick win, any of
+  them can jump ahead of 2 and 3 without consequences.
+- **Do not skip Phase 1 before 8.** The exterior reuses the wall modules, and
+  building them twice is wasted work.
+- **Phase 9 before 10 is fine.** Grime decals work on flat colour; textures only
+  make them richer.
+- Effort is my scripting time with `lib.py` already in place. Phase 1 includes
+  writing `lib.py`, the build harness and the validator.
 
 ## §20. Definition of done (every phase)
 
+0. The phase is named and ticked `[~]` in §0.2 before work starts.
 1. Build script runs clean; every asset logs `wrote <name> <tris> tris`.
 2. `node tools/validate-models.mjs` exits 0.
 3. `npx tsc --noEmit` → 0 · `npm run build` → 0 · `npm test` → all pass.
@@ -1279,7 +1385,8 @@ later has to be redone because an earlier phase changed shape or scale.
 5. Frame rate on the mobile profile does not drop below the pre-phase number.
 6. Screenshot before/after into `audit/`.
 7. Commit with the *why*, push to `freebuff/5c3b7bc8617797a07a1d90c2`.
-8. Update this file: tick the phase, correct any row that turned out wrong.
+8. Update this file: tick the phase in §0.2, add a line to §0.4, correct any
+   row that turned out wrong.
 
 ---
 
@@ -1306,6 +1413,8 @@ later has to be redone because an earlier phase changed shape or scale.
 
 | I need to… | go to |
 |---|---|
+| **start a phase** | say `Start Phase N` — index in §0.2, runbook in §0.3 |
+| see what is finished | §0.2 status column, §0.4 log |
 | know how to run Blender | §2 |
 | check a pivot or axis rule | §3.1, §3.2 |
 | pick a colour | §3.4 |
