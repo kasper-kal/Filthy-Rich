@@ -1363,6 +1363,512 @@
         0.63,
         0.865
       ]
+    },
+    {
+      "path": "trash/balloon.glb",
+      "group": "trash",
+      "tris": 134,
+      "bytes": 9516,
+      "bounds": [
+        0.091,
+        0.154,
+        0.04
+      ]
+    },
+    {
+      "path": "trash/balloon_inflated.glb",
+      "group": "trash",
+      "tris": 308,
+      "bytes": 12564,
+      "bounds": [
+        0.229,
+        0.227,
+        0.251
+      ]
+    },
+    {
+      "path": "trash/beer_bottle.glb",
+      "group": "trash",
+      "tris": 220,
+      "bytes": 11336,
+      "bounds": [
+        0.071,
+        0.068,
+        0.218
+      ]
+    },
+    {
+      "path": "trash/beer_can.glb",
+      "group": "trash",
+      "tris": 212,
+      "bytes": 11984,
+      "bounds": [
+        0.067,
+        0.067,
+        0.123
+      ]
+    },
+    {
+      "path": "trash/beer_can_crushed.glb",
+      "group": "trash",
+      "tris": 160,
+      "bytes": 9096,
+      "bounds": [
+        0.078,
+        0.068,
+        0.097
+      ]
+    },
+    {
+      "path": "trash/bottle.glb",
+      "group": "trash",
+      "tris": 220,
+      "bytes": 11328,
+      "bounds": [
+        0.071,
+        0.068,
+        0.218
+      ]
+    },
+    {
+      "path": "trash/bottle_tipped.glb",
+      "group": "trash",
+      "tris": 280,
+      "bytes": 17128,
+      "bounds": [
+        0.212,
+        0.068,
+        0.207
+      ]
+    },
+    {
+      "path": "trash/broken_item.glb",
+      "group": "trash",
+      "tris": 132,
+      "bytes": 11140,
+      "bounds": [
+        0.098,
+        0.135,
+        0.015
+      ]
+    },
+    {
+      "path": "trash/cardboard_box.glb",
+      "group": "trash",
+      "tris": 250,
+      "bytes": 20636,
+      "bounds": [
+        0.44,
+        0.44,
+        0.465
+      ]
+    },
+    {
+      "path": "trash/cardboard_box_crushed.glb",
+      "group": "trash",
+      "tris": 162,
+      "bytes": 12728,
+      "bounds": [
+        0.419,
+        0.418,
+        0.198
+      ]
+    },
+    {
+      "path": "trash/chip_bag.glb",
+      "group": "trash",
+      "tris": 176,
+      "bytes": 12116,
+      "bounds": [
+        0.146,
+        0.062,
+        0.206
+      ]
+    },
+    {
+      "path": "trash/cigarette_butt.glb",
+      "group": "trash",
+      "tris": 174,
+      "bytes": 11164,
+      "bounds": [
+        0.044,
+        0.011,
+        0.023
+      ]
+    },
+    {
+      "path": "trash/cobweb.glb",
+      "group": "trash",
+      "tris": 180,
+      "bytes": 9868,
+      "bounds": [
+        0.22,
+        0.191,
+        0.004
+      ]
+    },
+    {
+      "path": "trash/condom_wrapper.glb",
+      "group": "trash",
+      "tris": 132,
+      "bytes": 10516,
+      "bounds": [
+        0.063,
+        0.05,
+        0.012
+      ]
+    },
+    {
+      "path": "trash/confetti.glb",
+      "group": "trash",
+      "tris": 12,
+      "bytes": 1520,
+      "bounds": [
+        0.02,
+        0.019,
+        0.001
+      ]
+    },
+    {
+      "path": "trash/damaged_item.glb",
+      "group": "trash",
+      "tris": 108,
+      "bytes": 8552,
+      "bounds": [
+        0.125,
+        0.145,
+        0.035
+      ]
+    },
+    {
+      "path": "trash/debris.glb",
+      "group": "trash",
+      "tris": 256,
+      "bytes": 19948,
+      "bounds": [
+        0.129,
+        0.16,
+        0.045
+      ]
+    },
+    {
+      "path": "trash/dog_hair_tuft.glb",
+      "group": "trash",
+      "tris": 100,
+      "bytes": 8872,
+      "bounds": [
+        0.062,
+        0.033,
+        0.011
+      ]
+    },
+    {
+      "path": "trash/drywall_piece.glb",
+      "group": "trash",
+      "tris": 200,
+      "bytes": 8968,
+      "bounds": [
+        0.3,
+        0.204,
+        0.024
+      ]
+    },
+    {
+      "path": "trash/dust_bunny.glb",
+      "group": "trash",
+      "tris": 152,
+      "bytes": 11980,
+      "bounds": [
+        0.11,
+        0.085,
+        0.072
+      ]
+    },
+    {
+      "path": "trash/food_container.glb",
+      "group": "trash",
+      "tris": 124,
+      "bytes": 9504,
+      "bounds": [
+        0.142,
+        0.142,
+        0.049
+      ]
+    },
+    {
+      "path": "trash/hair_clump.glb",
+      "group": "trash",
+      "tris": 148,
+      "bytes": 12280,
+      "bounds": [
+        0.09,
+        0.048,
+        0.014
+      ]
+    },
+    {
+      "path": "trash/lint_ball.glb",
+      "group": "trash",
+      "tris": 64,
+      "bytes": 5428,
+      "bounds": [
+        0.07,
+        0.06,
+        0.046
+      ]
+    },
+    {
+      "path": "trash/magazine.glb",
+      "group": "trash",
+      "tris": 132,
+      "bytes": 10536,
+      "bounds": [
+        0.221,
+        0.28,
+        0.046
+      ]
+    },
+    {
+      "path": "trash/magazine_open.glb",
+      "group": "trash",
+      "tris": 132,
+      "bytes": 11244,
+      "bounds": [
+        0.436,
+        0.28,
+        0.034
+      ]
+    },
+    {
+      "path": "trash/newspaper_stack.glb",
+      "group": "trash",
+      "tris": 264,
+      "bytes": 21500,
+      "bounds": [
+        0.319,
+        0.241,
+        0.074
+      ]
+    },
+    {
+      "path": "trash/old_magazine.glb",
+      "group": "trash",
+      "tris": 176,
+      "bytes": 13212,
+      "bounds": [
+        0.221,
+        0.28,
+        0.045
+      ]
+    },
+    {
+      "path": "trash/paint_can.glb",
+      "group": "trash",
+      "tris": 280,
+      "bytes": 15508,
+      "bounds": [
+        0.161,
+        0.151,
+        0.204
+      ]
+    },
+    {
+      "path": "trash/pizza_box.glb",
+      "group": "trash",
+      "tris": 184,
+      "bytes": 13536,
+      "bounds": [
+        0.35,
+        0.35,
+        0.123
+      ]
+    },
+    {
+      "path": "trash/pizza_box_closed.glb",
+      "group": "trash",
+      "tris": 168,
+      "bytes": 13324,
+      "bounds": [
+        0.35,
+        0.35,
+        0.035
+      ]
+    },
+    {
+      "path": "trash/plastic_bag.glb",
+      "group": "trash",
+      "tris": 224,
+      "bytes": 16776,
+      "bounds": [
+        0.251,
+        0.2,
+        0.097
+      ]
+    },
+    {
+      "path": "trash/plastic_sheet.glb",
+      "group": "trash",
+      "tris": 140,
+      "bytes": 8024,
+      "bounds": [
+        0.5,
+        0.5,
+        0.075
+      ]
+    },
+    {
+      "path": "trash/red_solo_cup.glb",
+      "group": "trash",
+      "tris": 140,
+      "bytes": 5852,
+      "bounds": [
+        0.084,
+        0.08,
+        0.1
+      ]
+    },
+    {
+      "path": "trash/sawdust_pile.glb",
+      "group": "trash",
+      "tris": 146,
+      "bytes": 9972,
+      "bounds": [
+        0.262,
+        0.203,
+        0.049
+      ]
+    },
+    {
+      "path": "trash/sock.glb",
+      "group": "trash",
+      "tris": 256,
+      "bytes": 15244,
+      "bounds": [
+        0.167,
+        0.066,
+        0.085
+      ]
+    },
+    {
+      "path": "trash/sock_pair.glb",
+      "group": "trash",
+      "tris": 336,
+      "bytes": 21412,
+      "bounds": [
+        0.186,
+        0.091,
+        0.083
+      ]
+    },
+    {
+      "path": "trash/spill_food.glb",
+      "group": "trash",
+      "tris": 224,
+      "bytes": 15416,
+      "bounds": [
+        0.209,
+        0.189,
+        0.021
+      ]
+    },
+    {
+      "path": "trash/spill_mud.glb",
+      "group": "trash",
+      "tris": 240,
+      "bytes": 11544,
+      "bounds": [
+        0.326,
+        0.302,
+        0.043
+      ]
+    },
+    {
+      "path": "trash/spill_paint.glb",
+      "group": "trash",
+      "tris": 218,
+      "bytes": 12724,
+      "bounds": [
+        0.423,
+        0.361,
+        0.066
+      ]
+    },
+    {
+      "path": "trash/spill_puddle.glb",
+      "group": "trash",
+      "tris": 116,
+      "bytes": 4040,
+      "bounds": [
+        0.389,
+        0.418,
+        0.003
+      ]
+    },
+    {
+      "path": "trash/sticky_patch.glb",
+      "group": "trash",
+      "tris": 88,
+      "bytes": 3196,
+      "bounds": [
+        0.139,
+        0.128,
+        0.002
+      ]
+    },
+    {
+      "path": "trash/takeout_bag.glb",
+      "group": "trash",
+      "tris": 118,
+      "bytes": 8792,
+      "bounds": [
+        0.15,
+        0.1,
+        0.252
+      ]
+    },
+    {
+      "path": "trash/tape_roll.glb",
+      "group": "trash",
+      "tris": 120,
+      "bytes": 8272,
+      "bounds": [
+        0.084,
+        0.08,
+        0.021
+      ]
+    },
+    {
+      "path": "trash/tissue.glb",
+      "group": "trash",
+      "tris": 96,
+      "bytes": 6380,
+      "bounds": [
+        0.101,
+        0.081,
+        0.019
+      ]
+    },
+    {
+      "path": "trash/tissue_wad.glb",
+      "group": "trash",
+      "tris": 140,
+      "bytes": 9452,
+      "bounds": [
+        0.065,
+        0.06,
+        0.049
+      ]
+    },
+    {
+      "path": "trash/wet_towel.glb",
+      "group": "trash",
+      "tris": 156,
+      "bytes": 9556,
+      "bounds": [
+        0.301,
+        0.301,
+        0.041
+      ]
     }
   ]
 }

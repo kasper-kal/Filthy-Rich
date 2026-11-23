@@ -630,10 +630,6 @@ export class Room {
     this.houseGroup.add(group);
   }
 
-  update(delta: number): void {
-    this.trashManager?.update(delta);
-  }
-
   getCleanableSurfaces(): THREE.Mesh[] {
     return [...this.fixtures, ...this.decor, this.floor, ...this.walls];
   }

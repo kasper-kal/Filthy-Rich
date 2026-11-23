@@ -133,7 +133,6 @@ export class SceneManager {
 
   update(delta: number): void {
     this.cameraController.update(delta);
-    this.room.update(delta);
     this.furnitureManager.update(delta);
   }
 

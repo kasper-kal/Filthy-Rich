@@ -57,7 +57,7 @@ Rules that never change:
 | 1 | **Shell** | §5 | 66 | `architecture/` | — | `[x]` |
 | 2 | **Fixtures** | §6 | 56 | `fixtures/` | 1 | `[x]` |
 | 3 | **Decor** | §7 | 78 | `decor/` | 1, 2 | `[x]` |
-| 4 | **Trash** | §8 | 39 | `trash/` | 1 (floors) | `[ ]` |
+| 4 | **Trash** | §8 | 46 | `trash/` | 1 (floors) | `[x]` |
 | 5 | **Cleaning kit** | §9 | 21 | `tools/` | — | `[ ]` |
 | 6 | **Vehicles** | §10 | 27 | `vehicles/` | — | `[ ]` |
 | 7 | **Garage** | §11 | 55 | `repair/` | 6 | `[ ]` |
@@ -68,7 +68,7 @@ Rules that never change:
 **~419 models across ten phases.** Separately, 22 furniture pieces are already
 shipped (§1.2) and are not part of any phase.
 
-Progress: **3 / 10 phases complete.**
+Progress: **4 / 10 phases complete.**
 
 Smallest useful first step: Phase 1. Biggest visible jump for the least work:
 Phase 1, then 5, then 4. Phases 4, 5 and 6 are independent of everything and can
@@ -111,7 +111,8 @@ assets, starting the next phase, or committing with a check failing.
 |---|---|---|---|
 | 1 House shell | 23 Nov 2026 | `8f98a30` | 16 assets, 7,756 tris; walls/doors/windows/trim wired into `Room.ts` |
 | 2 Fixtures | 23 Nov 2026 | `c367cdc` | 29 assets, 28,572 tris; kitchen/bath/laundry placed; env map added |
-| 3 Decor | 23 Nov 2026 | this commit | 79 assets, 39,620 tris; 110 props across all eight rooms; facing bug found and fixed |
+| 3 Decor | 23 Nov 2026 | `79704a2` | 79 assets, 39,620 tris; 110 props across all eight rooms; facing bug found and fixed |
+| 4 Trash | 23 Nov 2026 | this commit | 46 assets, 7,998 tris; 31 spawn types modelled, box factory deleted; bob and spin removed |
 
 ---
 
@@ -176,7 +177,7 @@ look like doors, clothes, dishes, clutter, and a world outside the windows.
 | system | file | how it loads |
 |---|---|---|
 | furniture | `FurnitureManager.ts` | map of id → `/models/furniture/<id>.glb`, cached |
-| trash | `TrashManager.ts` | 23 type names + size/mass table, currently box meshes |
+| trash | `TrashManager.ts` | 31 type names + size/mass table, GLBs since Phase 4 |
 | cleaning tools | `DiegeticHUD.ts` | 4 tools (`spray`, `mop`, `vacuum`, `trash_bag`) built from primitives |
 | vehicles | `VehicleVisual.ts` | body built from boxes; wheels built separately in `Vehicle.ts::createWheel()` |
 | rooms | `Room.ts` | `createWallsWithOpenings`, `createWallSegment`, `createBaseboards`, `createDoorFrames`, `createWindowFrames`, `createCrownMolding` |
@@ -452,6 +453,8 @@ game-side job, but it is why the brass must be believable on its own.
 | `ceramic` | `#EFEBE3` | 0.25 | 0 | sanitaryware, pots, mugs |
 | `glass_clear` | `#B7CBD2` | 0.08 | 0 | panes, bottles |
 | `glass_frosted` | `#D5DEE0` | 0.30 | 0 | shower screens |
+| `glass_green` | `#2E5A32` | 0.12 | 0 | beer bottles |
+| `foil` | `#8F9093` | 0.38 | 1.0 | chip bags, wrappers |
 | `paper` | `#D9D4C6` | 0.80 | 0 | books, tissues, card |
 | `cardboard` | `#B08B5E` | 0.85 | 0 | boxes |
 | `plastic_white` | `#E4E4E0` | 0.45 | 0 | bins, containers |
@@ -996,12 +999,57 @@ softness; anything more is wasted on a phone.
 
 ---
 
-## §8. Phase 4 — trash, clutter and spills `[ ]`
+## §8. Phase 4 — trash, clutter and spills `[x]`
 
-**Status:** `[ ]` not started · **Depends on:** Phase 1 (floors to land on) · **Done when:** all 23 trash types load as models instead of boxes, with spawn behaviour and physics unchanged.
+**Status:** `[x]` shipped 23 Nov 2026 · **Depends on:** Phase 1 (floors to land on) · **Done when:** all 31 trash types load as models instead of boxes, with spawn behaviour unchanged.
 
-`TrashManager.ts` draws coloured boxes from a size table. There are **23 types**;
-keep the names exact or the spawn table breaks. Folder: `public/models/trash/`.
+### 8.0 What shipped
+
+Forty-six assets, **7,998 tris, 511 KB**, built by `tools/blender/build_trash.py`
+(helpers in `trash_common.py`, one module per family: `trash_paper`,
+`trash_drink`, `trash_soft`, `trash_hard`, `trash_spill`). Every one is
+bottom-centre origin, AO-baked, UV-mapped and pruned, and every one is inside
+its row budget — the largest is `sock_pair` at 336 triangles.
+
+**The count in this file was wrong.** `TRASH_TYPES` plus the five job tables in
+`TrashManager.ts` spawn **31 distinct names**, not the 23 this section claimed,
+and seven of them had no row here at all: `plastic_sheet`, `wet_towel`,
+`damaged_item`, `debris`, `dust_bunny`, `cobweb`, `lint_ball`. They are in the
+table below now and all seven are built, because a spawn type without a model is
+an object missing from a job. The code wins; the row is fixed.
+
+**How it is wired.** `TrashItem` clones the GLB through `ModelLibrary` instead
+of building a box, and clones each material per item so the highlight stays on
+the piece under the crosshair (a shared material would light every can in the
+house). `TrashManager.init()` preloads all 31 models before it spawns anything,
+and picks only types whose model actually loaded. Picking is otherwise
+unchanged: `Game.ts` and `CleaningSystem.ts` now walk up from the raycast hit to
+the owning item, so a hit on any child mesh counts.
+
+**Two things deliberately changed with the placeholder:**
+
+- The slow bob and spin are gone. They existed to make an untextured box read as
+  pickable; a beer can hovering and turning in mid-air is worse than no cue at
+  all, and the highlight does that job properly now.
+- The item no longer disposes its geometry on collection. Geometry is shared
+  with the cached asset — disposing it would blank every other clone of that
+  type. Only the per-item material clones are freed.
+
+**Deferred, deliberately:**
+
+- No `COL_` collision proxies inside the GLBs. Trash has no physics body to feed
+  yet (§15.2 exists for the furniture and vehicles that do), and a proxy for a
+  64-triangle tissue would cost more than the model. The size table is still the
+  source of a proxy when one is needed.
+- The eleven variant rows (`pizza_box_closed`, `beer_can_crushed`, `tissue_wad`,
+  `bottle_tipped`, `magazine_open`, `sock_pair`, `balloon_inflated`,
+  `cardboard_box_crushed`, `cigarette_butt`, `dog_hair_tuft`, `sticky_patch`)
+  are built and validated but not spawned: they belong to the "player walked on
+  it" pass and to hand-placed detail, not to the random spawn table.
+- The four spills are placed by the grime pass (§13), not by `TrashManager`.
+
+`TrashManager.ts` no longer builds geometry at all. It holds the size/mass table
+(the contract in §17) and spawns GLB clones. Folder: `public/models/trash/`.
 
 | file | real size (m) | tris | notes |
 |---|---|---|---|
@@ -1043,7 +1091,20 @@ keep the names exact or the spawn table breaks. Folder: `public/models/trash/`.
 
 Rules: origin bottom centre so items drop onto the floor; ≤ 350 tris each;
 big items (boxes, bags) get a `_crushed` variant for after the player walks on
-them; every item needs a **collision proxy** (§15.2), never the render mesh.
+them. Collision proxies (§15.2) are deferred for trash — there is no physics
+body to feed yet, and §8.0 records why.
+
+**Types the code spawns that this table used to miss** — all built and validated:
+
+| file | real size (m) | tris | notes |
+|---|---|---|---|
+| `plastic_sheet.glb` | 0.50 × 0.50 × 0.03 | 140 | renovation dust sheet, crumpled |
+| `wet_towel.glb` | 0.30 × 0.30 × 0.03 | 156 | emergency, damp cloth with a fold |
+| `damaged_item.glb` | 0.20 × 0.20 × 0.10 | 108 | two shards and a chunk |
+| `debris.glb` | 0.15 × 0.15 × 0.06 | 256 | five chunks plus dust |
+| `dust_bunny.glb` | 0.08 × 0.08 × 0.05 | 152 | deep clean, three lumps |
+| `cobweb.glb` | 0.22 × 0.22 × 0.005 | 180 | six rays and a ring |
+| `lint_ball.glb` | 0.05 × 0.05 × 0.04 | 64 | dryer fluff |
 
 ### 8.1 Spills — geometry or decal?
 
@@ -1055,7 +1116,9 @@ Liquid spills are decals, not meshes (§13). Exception: the three "chunky" spill
 | `spill_paint.glb` | 0.35 × 0.35 × 0.01 | 260 |
 | `spill_food.glb` | 0.20 × 0.16 × 0.02 | 220 |
 | `spill_mud.glb` | 0.30 × 0.22 × 0.02 | 240 |
-| `spill_puddle.glb` | 0.40 × 0.30 × 0.004 | 120 |
+| `spill_puddle.glb` | 0.40 × 0.30 × 0.004 | 116 |
+
+All four are built and validated (§8.0); the grime pass (§13) is what places them.
 
 ---
 
@@ -1645,7 +1708,7 @@ disposeGroup(g: THREE.Group): void
 | 1 | Shell | — | one long session | walls, trim, doors and windows are the reason the house reads as cheap; everything else sits on top of them |
 | 2 | Fixtures | 1 | 1–2 sessions | kitchens and bathrooms are where cleaning actually happens |
 | 3 | Decor | 1, 2 | 1–2 sessions | the cheapest way to stop rooms feeling unfurnished |
-| 4 | Trash | 1 | 1 session | the core interaction; currently coloured boxes |
+| 4 | Trash | 1 | 1 session | the core interaction; shipped as 46 GLBs |
 | 5 | Cleaning kit | — | 1 session | always on screen, so it must look right early |
 | 6 | Vehicles | — | 1–2 sessions | the car is the second thing the player stares at |
 | 7 | Garage | 6 | 1 session | the other half of the loop |

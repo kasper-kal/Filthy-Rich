@@ -1,27 +1,24 @@
 import * as THREE from 'three';
-import { TrashItem } from './TrashItem.js';
-import { getFloorBounds, getRoomBounds, HOUSE_LAYOUT, RoomData } from './HouseLayout.js';
+import { TrashItem, trashModelPath, type TrashType } from './TrashItem.js';
+import { getFloorBounds, getRoomBounds, HOUSE_LAYOUT } from './HouseLayout.js';
 import type { Job } from './JobSystem.js';
+import { ModelLibrary } from '../world/ModelLibrary.js';
 
-const TRASH_TYPES: { name: string; color: number; size: [number, number, number]; mass: number }[] =
-  [
-    { name: 'pizza_box', color: 0xd4a574, size: [0.35, 0.04, 0.35], mass: 0.2 },
-    { name: 'beer_can', color: 0x88cc88, size: [0.06, 0.12, 0.06], mass: 0.03 },
-    { name: 'takeout_bag', color: 0xf5e6c8, size: [0.15, 0.25, 0.1], mass: 0.1 },
-    { name: 'condom_wrapper', color: 0xffddaa, size: [0.04, 0.005, 0.05], mass: 0.005 },
-    { name: 'tissue', color: 0xffffff, size: [0.08, 0.01, 0.1], mass: 0.01 },
-    { name: 'bottle', color: 0x4488aa, size: [0.07, 0.2, 0.07], mass: 0.15 },
-    { name: 'magazine', color: 0xcc8866, size: [0.22, 0.03, 0.28], mass: 0.3 },
-    { name: 'sock', color: 0x666688, size: [0.1, 0.02, 0.06], mass: 0.05 },
-    { name: 'food_container', color: 0xddddaa, size: [0.12, 0.05, 0.12], mass: 0.08 },
-    { name: 'hair_clump', color: 0x443322, size: [0.05, 0.02, 0.05], mass: 0.01 },
-  ];
+const TRASH_TYPES: TrashType[] = [
+  { name: 'pizza_box', color: 0xd4a574, size: [0.35, 0.04, 0.35], mass: 0.2 },
+  { name: 'beer_can', color: 0x88cc88, size: [0.06, 0.12, 0.06], mass: 0.03 },
+  { name: 'takeout_bag', color: 0xf5e6c8, size: [0.15, 0.25, 0.1], mass: 0.1 },
+  { name: 'condom_wrapper', color: 0xffddaa, size: [0.04, 0.005, 0.05], mass: 0.005 },
+  { name: 'tissue', color: 0xffffff, size: [0.08, 0.01, 0.1], mass: 0.01 },
+  { name: 'bottle', color: 0x4488aa, size: [0.07, 0.2, 0.07], mass: 0.15 },
+  { name: 'magazine', color: 0xcc8866, size: [0.22, 0.03, 0.28], mass: 0.3 },
+  { name: 'sock', color: 0x666688, size: [0.1, 0.02, 0.06], mass: 0.05 },
+  { name: 'food_container', color: 0xddddaa, size: [0.12, 0.05, 0.12], mass: 0.08 },
+  { name: 'hair_clump', color: 0x443322, size: [0.05, 0.02, 0.05], mass: 0.01 },
+];
 
 // Job-specific trash types
-const JOB_TRASH_TYPES: Record<
-  string,
-  { name: string; color: number; size: [number, number, number]; mass: number }[]
-> = {
+const JOB_TRASH_TYPES: Record<string, TrashType[]> = {
   post_party: [
     { name: 'red_solo_cup', color: 0xff4444, size: [0.08, 0.1, 0.08], mass: 0.02 },
     { name: 'beer_bottle', color: 0x226622, size: [0.06, 0.22, 0.06], mass: 0.18 },
@@ -55,6 +52,15 @@ const JOB_TRASH_TYPES: Record<
   ],
 };
 
+/** Every model the spawners can ask for, loaded before the first item appears. */
+export const TRASH_MODEL_PATHS: string[] = Array.from(
+  new Set(
+    [...TRASH_TYPES, ...Object.values(JOB_TRASH_TYPES).flat()].map(type =>
+      trashModelPath(type.name)
+    )
+  )
+);
+
 export class TrashManager {
   public items: TrashItem[] = [];
   private scene: THREE.Scene;
@@ -67,20 +73,30 @@ export class TrashManager {
   }
 
   async init(): Promise<void> {
+    // 28 items can be any of 31 types, so the whole set is preloaded once:
+    // 508 KB of models, and it keeps the first job's litter from popping in.
+    await ModelLibrary.preload(TRASH_MODEL_PATHS);
     this.generateTrash(28);
+  }
+
+  /** Prefer a type whose model actually loaded; fall back to the full table. */
+  private pickType(types: readonly TrashType[]): TrashType {
+    const ready = types.filter(type => ModelLibrary.has(trashModelPath(type.name)));
+    const pool = ready.length > 0 ? ready : types;
+    return pool[Math.floor(Math.random() * pool.length)];
   }
 
   private generateTrash(count: number): void {
     const bounds = this.getFloorBounds();
 
     for (let i = 0; i < count; i++) {
-      const type = TRASH_TYPES[Math.floor(Math.random() * TRASH_TYPES.length)];
+      const type = this.pickType(TRASH_TYPES);
       const x = THREE.MathUtils.lerp(bounds.min.x, bounds.max.x, Math.random());
       const z = THREE.MathUtils.lerp(bounds.min.y, bounds.max.y, Math.random());
       const rotation = Math.random() * Math.PI * 2;
 
       const item = new TrashItem(type, { x, z, rotation });
-      this.scene.add(item.mesh);
+      this.scene.add(item.object);
       this.items.push(item);
     }
     this.itemCount = this.items.length;
@@ -97,11 +113,6 @@ export class TrashManager {
     // Clear existing trash first
     this.reset();
 
-    let totalTrash = 0;
-    for (const detail of job.roomDetails) {
-      totalTrash += detail.trashCount;
-    }
-
     // Distribute trash across target rooms
     for (const detail of job.roomDetails) {
       const room = HOUSE_LAYOUT.find(r => r.name === detail.roomName);
@@ -115,13 +126,13 @@ export class TrashManager {
       const types = [...TRASH_TYPES, ...jobTypes];
 
       for (let i = 0; i < roomTrashCount; i++) {
-        const type = types[Math.floor(Math.random() * types.length)];
+        const type = this.pickType(types);
         const x = THREE.MathUtils.lerp(bounds.min.x, bounds.max.x, Math.random());
         const z = THREE.MathUtils.lerp(bounds.min.y, bounds.max.y, Math.random());
         const rotation = Math.random() * Math.PI * 2;
 
         const item = new TrashItem(type, { x, z, rotation });
-        this.scene.add(item.mesh);
+        this.scene.add(item.object);
         this.items.push(item);
       }
     }
@@ -140,9 +151,8 @@ export class TrashManager {
     const index = this.items.indexOf(item);
     if (index > -1) {
       this.items.splice(index, 1);
-      this.scene.remove(item.mesh);
-      item.mesh.geometry.dispose();
-      (item.mesh.material as THREE.Material).dispose();
+      this.scene.remove(item.object);
+      item.dispose();
     }
   }
 
@@ -152,17 +162,10 @@ export class TrashManager {
     return Math.round((collected / this.itemCount) * 100);
   }
 
-  update(delta: number): void {
-    this.items.forEach(item => {
-      item.update(delta);
-    });
-  }
-
   reset(): void {
     this.items.forEach(item => {
-      this.scene.remove(item.mesh);
-      item.mesh.geometry.dispose();
-      (item.mesh.material as THREE.Material).dispose();
+      this.scene.remove(item.object);
+      item.dispose();
     });
     this.items = [];
     this.itemCount = 0;

@@ -13,6 +13,7 @@ import { JobSystem, JobStatus } from '../systems/JobSystem.js';
 import { HOUSE_LAYOUT } from '../systems/HouseLayout.js';
 import { audioManager } from '../systems/AudioManager.js';
 import { DiegeticHUD } from '../systems/DiegeticHUD.js';
+import { TrashItem } from '../systems/TrashItem.js';
 import { PostProcessing } from '../systems/PostProcessing.js';
 import type { MemoryProfiler } from '../systems/MemoryProfiler.js';
 import { memoryProfiler, performanceMonitor } from '../systems/MemoryProfiler.js';
@@ -715,10 +716,8 @@ export class Game {
     const hit = this.getInteractionTarget();
 
     if (tool.type === 'trash_bag' && hit?.object.name.startsWith('trash_')) {
-      const item = this.cleaningSystem.trashManager
-        .getActiveItems()
-        .find(i => i.mesh === hit.object || i.mesh.children.includes(hit.object));
-      if (item) {
+      const item = TrashItem.fromObject(hit.object);
+      if (item && !item.collected) {
         this.cleaningSystem.collectTrash(item);
         this.sceneManager.addLean(-0.05);
       }
@@ -867,7 +866,7 @@ export class Game {
 
     if (tool.type === 'trash_bag') {
       const items = this.cleaningSystem.trashManager.getActiveItems();
-      items.forEach(item => objects.push(item.mesh));
+      items.forEach(item => objects.push(item.object));
     } else {
       const decals = this.cleaningSystem.getDecalSystem().getAllDecals();
       decals.forEach(decal => objects.push(decal.mesh));

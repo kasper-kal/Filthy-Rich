@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { SceneManager } from './SceneManager.js';
 import type { InputManager } from './InputManager.js';
 import type { TrashManager } from './TrashManager.js';
-import type { TrashItem } from './TrashItem.js';
+import { TrashItem } from './TrashItem.js';
 import { ParticleSystem } from './ParticleSystem.js';
 import type { DecalData } from './DecalSystem.js';
 import { DecalSystem } from './DecalSystem.js';
@@ -164,7 +164,7 @@ export class CleaningSystem {
 
   public collectTrash(item: TrashItem): void {
     item.collect();
-    this.particleSystem.emitTrashCollected(item.mesh.position.clone());
+    this.particleSystem.emitTrashCollected(item.object.position.clone());
     this.trashManager.removeItem(item);
     window.dispatchEvent(new CustomEvent('trash-collected'));
     this.checkJobComplete();
@@ -333,11 +333,12 @@ export class CleaningSystem {
 
     if (tool.effectiveOn.includes('trash')) {
       const hit = this.sceneManager.raycastFirst(
-        this.trashManager.getActiveItems().map(i => i.mesh)
+        this.trashManager.getActiveItems().map(i => i.object)
       );
       if (hit) {
-        const item = this.trashManager.getActiveItems().find(i => i.mesh === hit.object);
-        if (item) {
+        // The hit is one of the model's child meshes, so walk up to its owner.
+        const item = TrashItem.fromObject(hit.object);
+        if (item && !item.collected) {
           this.highlightedTrash = item;
           item.setHighlighted(true);
         }
