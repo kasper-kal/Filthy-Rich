@@ -58,7 +58,7 @@ Rules that never change:
 | 2 | **Fixtures** | §6 | 56 | `fixtures/` | 1 | `[x]` |
 | 3 | **Decor** | §7 | 78 | `decor/` | 1, 2 | `[x]` |
 | 4 | **Trash** | §8 | 46 | `trash/` | 1 (floors) | `[x]` |
-| 5 | **Cleaning kit** | §9 | 21 | `tools/` | — | `[ ]` |
+| 5 | **Cleaning kit** | §9 | 21 | `tools/` | — | `[x]` |
 | 6 | **Vehicles** | §10 | 27 | `vehicles/` | — | `[ ]` |
 | 7 | **Garage** | §11 | 55 | `repair/` | 6 | `[ ]` |
 | 8 | **Exterior** | §12 | 51 | `exterior/`, `vegetation/` | 1 | `[ ]` |
@@ -68,7 +68,7 @@ Rules that never change:
 **~419 models across ten phases.** Separately, 22 furniture pieces are already
 shipped (§1.2) and are not part of any phase.
 
-Progress: **4 / 10 phases complete.**
+Progress: **5 / 10 phases complete.**
 
 Smallest useful first step: Phase 1. Biggest visible jump for the least work:
 Phase 1, then 5, then 4. Phases 4, 5 and 6 are independent of everything and can
@@ -112,7 +112,8 @@ assets, starting the next phase, or committing with a check failing.
 | 1 House shell | 23 Nov 2026 | `8f98a30` | 16 assets, 7,756 tris; walls/doors/windows/trim wired into `Room.ts` |
 | 2 Fixtures | 23 Nov 2026 | `c367cdc` | 29 assets, 28,572 tris; kitchen/bath/laundry placed; env map added |
 | 3 Decor | 23 Nov 2026 | `79704a2` | 79 assets, 39,620 tris; 110 props across all eight rooms; facing bug found and fixed |
-| 4 Trash | 23 Nov 2026 | this commit | 46 assets, 7,998 tris; 31 spawn types modelled, box factory deleted; bob and spin removed |
+| 4 Trash | 23 Nov 2026 | `9cedf55` | 46 assets, 7,998 tris; 31 spawn types modelled, box factory deleted; bob and spin removed |
+| 5 Cleaning kit | 23 Nov 2026 | this commit | 21 assets, 9,636 tris; four tools + glove wired into the HUD, primitive builders deleted; prune skipped because it eats the sockets |
 
 ---
 
@@ -178,7 +179,7 @@ look like doors, clothes, dishes, clutter, and a world outside the windows.
 |---|---|---|
 | furniture | `FurnitureManager.ts` | map of id → `/models/furniture/<id>.glb`, cached |
 | trash | `TrashManager.ts` | 31 type names + size/mass table, GLBs since Phase 4 |
-| cleaning tools | `DiegeticHUD.ts` | 4 tools (`spray`, `mop`, `vacuum`, `trash_bag`) built from primitives |
+| cleaning tools | `DiegeticHUD.ts` | 4 tools (`spray`, `mop`, `vacuum`, `trash_bag`) as GLBs since Phase 5, placed by a table and anchored to `SOC_*` empties |
 | vehicles | `VehicleVisual.ts` | body built from boxes; wheels built separately in `Vehicle.ts::createWheel()` |
 | rooms | `Room.ts` | `createWallsWithOpenings`, `createWallSegment`, `createBaseboards`, `createDoorFrames`, `createWindowFrames`, `createCrownMolding` |
 | world | `HouseGenerator.ts`, `ExteriorGenerator.ts`, `TerrainSystem.ts` | box houses, grass/driveway planes |
@@ -1122,12 +1123,98 @@ All four are built and validated (§8.0); the grime pass (§13) is what places t
 
 ---
 
-## §9. Phase 5 — the cleaning kit (held, first person) `[ ]`
+## §9. Phase 5 — the cleaning kit (held, first person) `[x]`
 
-**Status:** `[ ]` not started · **Depends on:** nothing · **Done when:** the four tools and the gloved hand are models in the player's hands, and the old primitive builders are deleted.
+**Status:** `[x]` shipped 23 Nov 2026 · **Depends on:** nothing · **Done when:** the four tools and the gloved hand are models in the player's hands, and the old primitive builders are deleted.
+
+### 9.0 What shipped
+
+Twenty-one assets, **9,636 tris, 725 KB**, built by `tools/blender/build_tools.py`
+(helpers in `tool_common.py`, builders split across `tools_held.py` and
+`tools_kit.py`, the same module-per-family reason as Phase 4). The largest is
+`vacuum` at 1,112 triangles, the smallest `sponge` at 88; every row is inside the
+§3.5 handheld budget of 1,800.
+
+**These are the only assets in the library that are not one joined mesh.** Each
+one exports as several named objects plus `SOC_*` empties, because the game looks
+names up at runtime: `liquid` drives the spray level, and the sockets are where
+the spray, the mop head and the vacuum head actually are. AO still bakes across
+the whole object — Cycles' AO pass is a scene query, so a finger baked on its own
+is darkened by the palm above it, and the parts do not have to be joined for that
+shadow to read.
+
+**Pruning is deliberately skipped for this group.** `@gltf-transform prune` drops
+nodes that carry no mesh, which is exactly what a socket is: run against
+`spray_bottle.glb` it removed `SOC_grip` and `SOC_nozzle` and the spray would have
+fallen back to guessing. It also only saved 4%, against a group that is 725 KB in
+total, so nothing is lost by leaving the files alone (§20 item 1b now says so).
+
+**Pivots.** The four held tools and both gloves use grip centre (§3.2), so one
+glove lands correctly on all four with no per-tool offset. That is why the mop's
+origin is 70 cm above its head: the hand is the anchor, not the floor. Everything
+else is floor centre, except the apron, which hangs from its neck loop.
+
+**The half-turn.** Models are authored facing −Y (§3.1), which becomes +Z in
+three.js — at the player — so the HUD turns every tool a half-turn in `y` to point
+its working end down-range. Two consequences: the spray bottle's level window is
+modelled on the **+Y side** (the model's back) so it faces the player, and the
+glove is attached with a cancelling π of its own so its forearm still comes from
+the bottom-right of the frame rather than across the middle of it.
+
+**HUD placement is a table now, not four hard-coded builders.** Each entry holds
+the fist position in camera space, a small rotation, the socket to read the
+working point from, and that socket's local emission axis. Measured in the
+portrait preview viewport (95° FOV, 0.53 aspect) each working end lands inside the
+frame: nozzle NDC 0.92 / −0.35, mop head 0.43 / −0.24, vacuum head 0.60 / 0.33,
+bag rim 0.74 / 0.08.
+
+**Wiring, one change each:** `buildSprayBottle`, `buildMop`, `buildVacuum` and
+`buildTrashBag` are gone; `updateToolModel` asks `ModelLibrary` for the GLB
+(cached, cloned) and guards a late resolve with a token; `getToolTipPose` reads
+the socket instead of a hand-tuned offset; `updateProgress` still drives the spray
+level, now through the `liquid` mesh's own node origin so it empties downward
+instead of hovering mid-bottle; the progress ring is built once and re-parented
+instead of recompiling its shader on every switch; camera-space meshes have
+shadows off so a tool cannot throw a shadow across the room.
+
+**Bugs this phase found and fixed:**
+
+- The mirrored glove came out with its palm and knuckles on the wrong side of the
+  fist: `lib.box` and the blob helpers keep their placement in the object origin,
+  so mirroring only the vertices moved the fingers and left the hand behind.
+  `mirror_x` flips the origin too.
+- The glove was attached with a cache clone, which returns `null` on a cold start
+  while the glove is still downloading — the player got a floating bottle with no
+  hand. It is its own load now, with a "did the tool change while I was loading"
+  check.
+- `leaf` was in the validator palette and used by the sponge's scourer but was
+  missing from `lib.PALETTE`; added (§3.4 `#3E7A34`).
+- The first contact sheets showed half of every held tool buried under the studio
+  floor, because grip-centre pivots put geometry below z = 0. The preview script
+  lifts each item onto the floor now — worth knowing before the next such sheet.
+
+**Deferred, deliberately:**
+
+- **The three animation clips** (`AN_spray_pull`, `AN_mop_swing`,
+  `AN_vacuum_push`) are not built. Object-level clips need a node rig and an NLA
+  track per part, and `DiegeticHUD` has no mixer to play them; doing both in the
+  same phase as the models would have doubled it for motion the player mostly
+  reads as the existing idle bob. The trigger is already a separate unmerged
+  object with a real gap behind it, so `AN_spray_pull` later is an export flag and
+  a mixer, not a re-model.
+- `spray_bottle_empty` validates but nothing spawns it: the level currently
+  bottoms out at 20% instead of swapping to the empty model.
+- `trash_bag_full`, `mop_bucket`, `bucket`, `caddy`, `glove_hand_left`,
+  `spray_nozzle`, `face_mask`, `apron`, `cloth`, `sponge`, `scrub_brush`,
+  `dustpan`, `squeegee` and `refill_bottle` are modelled for the repair loop and
+  the §11–§13 dressing passes; they are not placed in the house yet. This phase's
+  contract is the four tools and the hand, and those are wired.
+- `vacuum_floor_head` stays a separate asset per the table, so the in-hand vacuum
+  ends at the wand catch. Joining it to the wand belongs to the cleaning-feel
+  pass, where the head has to move while you clean.
 
 `CleaningSystem` has exactly four tools: `spray`, `mop`, `vacuum`, `trash_bag`.
-`DiegeticHUD.ts` builds the first two from primitives. These are the objects on
+`DiegeticHUD.ts` used to build them from primitives; since §9.0 it clones GLBs. These are the objects on
 screen for the entire game, so they get the most geometry per centimetre in the
 whole library.
 
@@ -1582,7 +1669,7 @@ tools/blender/
   build_furniture.py   [x] exists
   build_decor.py
   build_trash.py
-  build_tools.py
+  build_tools.py       [x] exists (21 assets, sockets, no prune)
   build_vehicles.py
   build_repair.py
   build_exterior.py
@@ -1709,7 +1796,7 @@ disposeGroup(g: THREE.Group): void
 | 2 | Fixtures | 1 | 1–2 sessions | kitchens and bathrooms are where cleaning actually happens |
 | 3 | Decor | 1, 2 | 1–2 sessions | the cheapest way to stop rooms feeling unfurnished |
 | 4 | Trash | 1 | 1 session | the core interaction; shipped as 46 GLBs |
-| 5 | Cleaning kit | — | 1 session | always on screen, so it must look right early |
+| 5 | Cleaning kit | — | 1 session | always on screen, so it must look right early; shipped as 21 GLBs |
 | 6 | Vehicles | — | 1–2 sessions | the car is the second thing the player stares at |
 | 7 | Garage | 6 | 1 session | the other half of the loop |
 | 8 | Exterior | 1 | 1–2 sessions | only matters once the player can see outside |
@@ -1733,7 +1820,8 @@ Notes:
    §0.2 before work starts.
 1. Build script runs clean; every asset logs `wrote <name> <tris> tris`.
 1b. Every asset carries vertex-colour AO (§2.4) and has been through
-   `npx @gltf-transform/cli@4 prune` (§2.5).
+   `npx @gltf-transform/cli@4 prune` (§2.5) — except the tools group, where prune
+   deletes the `SOC_*` empties and the HUD loses every anchor it reads (§9.0).
 2. `node tools/validate-models.mjs` exits 0.
 3. `npx tsc --noEmit` → 0 · `npm run build` → 0 · `npm test` → all pass.
 4. In game: new meshes visible, old procedural placeholders gone (search the

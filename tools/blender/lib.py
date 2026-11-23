@@ -52,6 +52,7 @@ PALETTE = {
     "concrete": ((0.45, 0.45, 0.43), 0.90, 0.0),
     "asphalt": ((0.07, 0.07, 0.075), 0.95, 0.0),
     "rubber": ((0.03, 0.03, 0.035), 0.80, 0.0),
+    "leaf": ((0.048, 0.195, 0.034), 0.65, 0.0),
 }
 
 BUDGET = {
@@ -193,6 +194,35 @@ def bake_ao(obj, samples=16):
     bpy.ops.object.bake(type="AO", target="VERTEX_COLORS")
 
 
+def bake_ao_all(objs, samples=14):
+    """Bake AO into vertex colours on every mesh in a multi-part asset (§2.4).
+
+    Cycles AO is a scene-wide occlusion query, so a finger baked on its own is
+    still darkened where the palm sits above it. That is why a tool can keep its
+    named parts (`liquid`, `trigger`) instead of being joined into one mesh the
+    way furniture is: the AO reads across the whole object anyway.
+    """
+    scene = bpy.context.scene
+    scene.render.engine = "CYCLES"
+    scene.cycles.device = "CPU"
+    scene.cycles.samples = samples
+    scene.render.bake.use_pass_direct = False
+    scene.render.bake.use_pass_indirect = False
+    scene.render.bake.margin = 2
+
+    for obj in objs:
+        if obj.type != "MESH":
+            continue
+        if not obj.data.color_attributes:
+            obj.data.color_attributes.new(name="AO", type="BYTE_COLOR", domain="CORNER")
+        obj.data.color_attributes.active_color_index = 0
+        obj.data.color_attributes.render_color_index = 0
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.bake(type="AO", target="VERTEX_COLORS")
+
+
 # ------------------------------------------------------------------- export
 def export_glb(obj, group, name):
     """Export one object as GLB and record it in the manifest."""
@@ -222,6 +252,66 @@ def export_glb(obj, group, name):
     size = os.path.getsize(path)
     print("wrote %-22s %6d tris %7d bytes" % (name, tris, size))
     record(group, name, tris, size, obj.dimensions)
+    return path
+
+
+def export_hierarchy(objs, group, name):
+    """Export several named objects and empties as one GLB.
+
+    Handheld tools need this and furniture does not: the game looks up `liquid`
+    by name to drive the spray-bottle level, and `SOC_*` empties are the only
+    honest way to tell it where a nozzle or a mop head actually is (§15.3).
+
+    Object transforms are baked into their meshes so every node sits at the
+    origin, except objects flagged `keep_origin` — the liquid column must keep
+    its own translation, otherwise scaling it would shrink toward the grip
+    instead of toward the bottom.
+    """
+    path = os.path.join(MODEL_DIR, group, name + ".glb")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    meshes = [obj for obj in objs if obj.type == "MESH"]
+    tris = 0
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in meshes:
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.transform_apply(
+            location=not obj.get("keep_origin"), rotation=True, scale=True
+        )
+        tris += sum(len(p.vertices) - 2 for p in obj.data.polygons)
+
+    low = [1e9, 1e9, 1e9]
+    high = [-1e9, -1e9, -1e9]
+    for obj in meshes:
+        for corner in obj.bound_box:
+            for axis in range(3):
+                value = obj.location[axis] + corner[axis]
+                low[axis] = min(low[axis], value)
+                high[axis] = max(high[axis], value)
+
+    for obj in objs:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = meshes[0]
+    bpy.ops.export_scene.gltf(
+        filepath=path,
+        export_format="GLB",
+        use_selection=True,
+        export_apply=True,
+        export_yup=True,
+        export_materials="EXPORT",
+        export_hierarchy_flatten_objs=False,
+        export_vertex_color="ACTIVE",
+        export_all_vertex_colors=False,
+        export_animations=False,
+    )
+
+    size = os.path.getsize(path)
+    print(
+        "wrote %-22s %6d tris %7d bytes  [%s]"
+        % (name, tris, size, ", ".join(obj.name for obj in objs))
+    )
+    record(group, name, tris, size, [high[i] - low[i] for i in range(3)])
     return path
 
 

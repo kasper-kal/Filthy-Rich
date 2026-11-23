@@ -1365,6 +1365,237 @@
       ]
     },
     {
+      "path": "tools/apron.glb",
+      "group": "tools",
+      "tris": 436,
+      "bytes": 31300,
+      "bounds": [
+        0.764,
+        0.049,
+        0.67
+      ]
+    },
+    {
+      "path": "tools/bucket.glb",
+      "group": "tools",
+      "tris": 520,
+      "bytes": 35008,
+      "bounds": [
+        0.284,
+        0.284,
+        0.266
+      ]
+    },
+    {
+      "path": "tools/caddy.glb",
+      "group": "tools",
+      "tris": 460,
+      "bytes": 38568,
+      "bounds": [
+        0.35,
+        0.341,
+        0.264
+      ]
+    },
+    {
+      "path": "tools/cloth.glb",
+      "group": "tools",
+      "tris": 140,
+      "bytes": 7516,
+      "bounds": [
+        0.271,
+        0.27,
+        0.027
+      ]
+    },
+    {
+      "path": "tools/dustpan.glb",
+      "group": "tools",
+      "tris": 284,
+      "bytes": 26880,
+      "bounds": [
+        0.259,
+        0.288,
+        0.183
+      ]
+    },
+    {
+      "path": "tools/face_mask.glb",
+      "group": "tools",
+      "tris": 184,
+      "bytes": 18036,
+      "bounds": [
+        0.202,
+        0.11,
+        0.12
+      ]
+    },
+    {
+      "path": "tools/glove_hand.glb",
+      "group": "tools",
+      "tris": 860,
+      "bytes": 78556,
+      "bounds": [
+        0.274,
+        0.14,
+        0.114
+      ]
+    },
+    {
+      "path": "tools/glove_hand_left.glb",
+      "group": "tools",
+      "tris": 860,
+      "bytes": 78508,
+      "bounds": [
+        0.274,
+        0.14,
+        0.114
+      ]
+    },
+    {
+      "path": "tools/mop.glb",
+      "group": "tools",
+      "tris": 712,
+      "bytes": 65844,
+      "bounds": [
+        0.127,
+        0.128,
+        1.421
+      ]
+    },
+    {
+      "path": "tools/mop_bucket.glb",
+      "group": "tools",
+      "tris": 482,
+      "bytes": 40424,
+      "bounds": [
+        0.315,
+        0.295,
+        0.334
+      ]
+    },
+    {
+      "path": "tools/refill_bottle.glb",
+      "group": "tools",
+      "tris": 424,
+      "bytes": 25336,
+      "bounds": [
+        0.122,
+        0.087,
+        0.224
+      ]
+    },
+    {
+      "path": "tools/scrub_brush.glb",
+      "group": "tools",
+      "tris": 376,
+      "bytes": 34796,
+      "bounds": [
+        0.14,
+        0.066,
+        0.071
+      ]
+    },
+    {
+      "path": "tools/sponge.glb",
+      "group": "tools",
+      "tris": 88,
+      "bytes": 6880,
+      "bounds": [
+        0.112,
+        0.077,
+        0.04
+      ]
+    },
+    {
+      "path": "tools/spray_bottle.glb",
+      "group": "tools",
+      "tris": 600,
+      "bytes": 36908,
+      "bounds": [
+        0.099,
+        0.108,
+        0.244
+      ]
+    },
+    {
+      "path": "tools/spray_bottle_empty.glb",
+      "group": "tools",
+      "tris": 548,
+      "bytes": 33344,
+      "bounds": [
+        0.099,
+        0.105,
+        0.244
+      ]
+    },
+    {
+      "path": "tools/spray_nozzle.glb",
+      "group": "tools",
+      "tris": 196,
+      "bytes": 17124,
+      "bounds": [
+        0.034,
+        0.073,
+        0.038
+      ]
+    },
+    {
+      "path": "tools/squeegee.glb",
+      "group": "tools",
+      "tris": 152,
+      "bytes": 14400,
+      "bounds": [
+        0.255,
+        0.157,
+        0.097
+      ]
+    },
+    {
+      "path": "tools/trash_bag.glb",
+      "group": "tools",
+      "tris": 366,
+      "bytes": 28008,
+      "bounds": [
+        0.31,
+        0.302,
+        0.452
+      ]
+    },
+    {
+      "path": "tools/trash_bag_full.glb",
+      "group": "tools",
+      "tris": 600,
+      "bytes": 33788,
+      "bounds": [
+        0.372,
+        0.372,
+        0.501
+      ]
+    },
+    {
+      "path": "tools/vacuum.glb",
+      "group": "tools",
+      "tris": 1112,
+      "bytes": 75280,
+      "bounds": [
+        0.34,
+        0.32,
+        1.13
+      ]
+    },
+    {
+      "path": "tools/vacuum_floor_head.glb",
+      "group": "tools",
+      "tris": 236,
+      "bytes": 20424,
+      "bounds": [
+        0.298,
+        0.083,
+        0.106
+      ]
+    },
+    {
       "path": "trash/balloon.glb",
       "group": "trash",
       "tris": 134,

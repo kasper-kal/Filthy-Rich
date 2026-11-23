@@ -1,6 +1,58 @@
 import * as THREE from 'three';
 import type { CleaningSystem, ToolType } from './CleaningSystem.js';
 import type { Job } from './JobSystem.js';
+import { ModelLibrary } from '../world/ModelLibrary.js';
+
+/**
+ * Per-tool HUD placement (FINALLY-3D.md §9.0).
+ *
+ * Tools pivot on the grip, so `position` is where the fist sits in camera space.
+ * Every model is drawn facing -Y in Blender, which is +Z here — that is, at the
+ * player — so each gets a half-turn in `rotation.y` to point its working end
+ * down-range. `tip` is the socket the tool reads its working point from (§15.3)
+ * and `tipAxis` is that socket's local emission direction.
+ */
+const TOOL_VISUALS: Record<
+  ToolType,
+  {
+    model: string;
+    position: [number, number, number];
+    rotation: [number, number, number];
+    tip: string;
+    tipAxis: [number, number, number];
+  }
+> = {
+  spray: {
+    model: '/models/tools/spray_bottle.glb',
+    position: [0.3, -0.25, -0.6],
+    rotation: [0.1, Math.PI - 0.2, 0],
+    tip: 'SOC_nozzle',
+    tipAxis: [0, 0, 1],
+  },
+  mop: {
+    model: '/models/tools/mop.glb',
+    position: [0.16, 0.52, -0.62],
+    rotation: [0.1, Math.PI - 0.15, 0.06],
+    tip: 'SOC_mop_head',
+    tipAxis: [0, -1, 0],
+  },
+  vacuum: {
+    model: '/models/tools/vacuum.glb',
+    position: [0.26, 0.62, -0.58],
+    rotation: [0.12, Math.PI - 0.22, 0.1],
+    tip: 'SOC_vacuum_head',
+    tipAxis: [0, 0, 1],
+  },
+  trash_bag: {
+    model: '/models/tools/trash_bag.glb',
+    position: [0.3, 0.06, -0.7],
+    rotation: [0.1, Math.PI - 0.2, 0],
+    tip: 'SOC_grip',
+    tipAxis: [0, -1, 0],
+  },
+};
+
+const GLOVE_MODEL = '/models/tools/glove_hand.glb';
 
 export class DiegeticHUD {
   private scene: THREE.Scene;
@@ -22,6 +74,9 @@ export class DiegeticHUD {
   // Tool model (attached to camera)
   private toolModel!: THREE.Group;
   private currentToolType: ToolType = 'spray';
+  private loadedModel: THREE.Group | null = null;
+  private toolToken = 0;
+  private toolBaseY = -0.25;
 
   // Progress ring on tool
   private progressRing!: THREE.Mesh;
@@ -53,6 +108,8 @@ export class DiegeticHUD {
     this.createCrosshair();
     this.createToolWheel();
     this.createToolModel();
+    // Preload the rest of the kit so a tool switch never waits on a download.
+    void ModelLibrary.preload([...Object.values(TOOL_VISUALS).map(visual => visual.model), GLOVE_MODEL]);
     this.createPrompt();
     this.createReticle();
     this.createJobBoard();
@@ -204,181 +261,106 @@ export class DiegeticHUD {
   }
 
   private updateToolModel(): void {
-    this.toolModel.clear();
     const tool = this.cleaningSystem.getCurrentTool();
+    const visual = TOOL_VISUALS[tool.type];
+    const token = ++this.toolToken;
 
-    const materials = {
-      body: new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4, metalness: 0.6 }),
-      accent: new THREE.MeshStandardMaterial({
-        color: 0x2ecc71,
-        roughness: 0.3,
-        metalness: 0.7,
-        emissive: 0x2ecc71,
-        emissiveIntensity: 0.3,
-      }),
-      plastic: new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.6, metalness: 0.1 }),
-      liquid: new THREE.MeshPhysicalMaterial({
-        color: 0x44aaff,
-        transmission: 0.8,
-        thickness: 0.1,
-        roughness: 0.1,
-        metalness: 0,
-      }),
-    };
+    this.currentToolType = tool.type;
+    this.toolModel.clear();
+    this.liquidMesh = null;
+    this.loadedModel = null;
+    this.toolBaseY = visual.position[1];
+    this.toolModel.position.set(...visual.position);
+    this.toolModel.rotation.set(...visual.rotation);
 
-    switch (tool.type) {
-      case 'spray':
-        this.buildSprayBottle(materials);
-        break;
-      case 'mop':
-        this.buildMop(materials);
-        break;
-      case 'vacuum':
-        this.buildVacuum(materials);
-        break;
-      case 'trash_bag':
-        this.buildTrashBag(materials);
-        break;
-    }
-
-    // Progress ring on tool
+    // `clear()` took the ring with it; the shader is reused rather than rebuilt.
     this.createProgressRing();
-  }
 
-  private buildSprayBottle(mats: any): void {
-    const group = this.toolModel;
-
-    // Bottle body
-    const bodyGeo = new THREE.CylinderGeometry(0.035, 0.04, 0.18, 16);
-    const body = new THREE.Mesh(bodyGeo, mats.body);
-    body.position.y = 0.09;
-    group.add(body);
-
-    // Neck
-    const neckGeo = new THREE.CylinderGeometry(0.018, 0.022, 0.05, 12);
-    const neck = new THREE.Mesh(neckGeo, mats.plastic);
-    neck.position.y = 0.19;
-    group.add(neck);
-
-    // Sprayer head
-    const headGeo = new THREE.BoxGeometry(0.05, 0.03, 0.04);
-    const head = new THREE.Mesh(headGeo, mats.accent);
-    head.position.set(0.035, 0.22, 0);
-    group.add(head);
-
-    // Trigger
-    const trigGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.025, 8);
-    const trig = new THREE.Mesh(trigGeo, mats.accent);
-    trig.position.set(-0.015, 0.05, 0.02);
-    trig.rotation.x = Math.PI / 4;
-    group.add(trig);
-
-    // Liquid inside
-    const liquidGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.15, 12);
-    const liquid = new THREE.Mesh(liquidGeo, mats.liquid);
-    liquid.position.y = 0.075;
-    liquid.scale.y = 0.8;
-    group.add(liquid);
-    this.liquidMesh = liquid;
-  }
-
-  private buildMop(mats: any): void {
-    const group = this.toolModel;
-
-    // Handle
-    const handleGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.8, 8);
-    const handle = new THREE.Mesh(handleGeo, mats.body);
-    handle.position.y = 0.4;
-    group.add(handle);
-
-    // Mop head
-    const headGeo = new THREE.BoxGeometry(0.18, 0.04, 0.12);
-    const head = new THREE.Mesh(
-      headGeo,
-      new THREE.MeshStandardMaterial({
-        color: 0xcccccc,
-        roughness: 0.9,
-        metalness: 0,
+    // Cached and cloned, so switching tools is a clone and not a network parse.
+    void ModelLibrary.load(visual.model)
+      .then(source => {
+        // The player can hit 1-4 faster than a 36 KB GLB resolves.
+        if (token !== this.toolToken) return;
+        this.attachToolModel(source.clone(true), tool.type);
       })
-    );
-    head.position.y = -0.02;
-    group.add(head);
-
-    // Strands
-    for (let i = 0; i < 12; i++) {
-      const strandGeo = new THREE.CylinderGeometry(0.004, 0.002, 0.1, 4);
-      const strand = new THREE.Mesh(
-        strandGeo,
-        new THREE.MeshStandardMaterial({
-          color: 0xeeeeee,
-          roughness: 0.9,
-          metalness: 0,
-          transparent: true,
-          opacity: 0.8,
-        })
-      );
-      strand.position.set((Math.random() - 0.5) * 0.16, -0.07, (Math.random() - 0.5) * 0.1);
-      strand.rotation.x = (Math.random() - 0.5) * 0.3;
-      group.add(strand);
-    }
+      .catch(error => console.warn(`[DiegeticHUD] could not load ${visual.model}`, error));
   }
 
-  private buildVacuum(mats: any): void {
-    const group = this.toolModel;
-
-    // Body
-    const bodyGeo = new THREE.CylinderGeometry(0.07, 0.09, 0.15, 16);
-    const body = new THREE.Mesh(bodyGeo, mats.body);
-    body.position.y = 0.075;
-    group.add(body);
-
-    // Motor hump
-    const motorGeo = new THREE.SphereGeometry(0.05, 12, 12);
-    const motor = new THREE.Mesh(motorGeo, mats.accent);
-    motor.position.set(0, 0.18, 0);
-    motor.scale.set(1, 0.6, 1);
-    group.add(motor);
-
-    // Nozzle
-    const nozzleGeo = new THREE.CylinderGeometry(0.03, 0.04, 0.12, 12);
-    const nozzle = new THREE.Mesh(nozzleGeo, mats.plastic);
-    nozzle.position.set(0.09, 0, -0.02);
-    nozzle.rotation.z = -Math.PI / 2;
-    group.add(nozzle);
-
-    // Handle
-    const handleGeo = new THREE.TorusGeometry(0.06, 0.012, 8, 16, Math.PI);
-    const handle = new THREE.Mesh(handleGeo, mats.plastic);
-    handle.position.set(-0.06, 0.12, 0);
-    handle.rotation.x = Math.PI / 2;
-    group.add(handle);
-  }
-
-  private buildTrashBag(mats: any): void {
-    const group = this.toolModel;
-
-    // Bag body (crumpled)
-    const bagGeo = new THREE.DodecahedronGeometry(0.08, 1);
-    const bagMat = new THREE.MeshStandardMaterial({
-      color: 0x1a1a1a,
-      roughness: 0.9,
-      metalness: 0,
-      flatShading: true,
+  /**
+   * Put a freshly loaded tool in the player's hand.
+   *
+   * The tools pivot on the grip (§3.2), so one glove attached at the group
+   * origin fits all four and only its own angle differs. Camera-space meshes
+   * must not cast or receive shadows — the tool would throw a shadow across the
+   * room from wherever the player is looking.
+   */
+  private attachToolModel(model: THREE.Group, type: ToolType): void {
+    model.name = `tool_${type}`;
+    model.traverse(child => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = false;
+        child.receiveShadow = false;
+      }
     });
-    const bag = new THREE.Mesh(bagGeo, bagMat);
-    bag.position.y = 0.05;
-    bag.scale.set(1.2, 1.4, 1);
-    group.add(bag);
 
-    // Tie
-    const tieGeo = new THREE.TorusGeometry(0.03, 0.006, 8, 16);
-    const tieMat = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.5 });
-    const tie = new THREE.Mesh(tieGeo, tieMat);
-    tie.position.y = 0.15;
-    group.add(tie);
+    // The spray level is a sight window, so it keeps the translucent material
+    // the placeholder used rather than the exported glass one.
+    const liquid = model.getObjectByName('liquid');
+    if (liquid instanceof THREE.Mesh) {
+      if (!this.liquidMaterial) {
+        this.liquidMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0x44aaff,
+          transmission: 0.75,
+          thickness: 0.02,
+          roughness: 0.15,
+          metalness: 0,
+        });
+      }
+      liquid.material = this.liquidMaterial;
+      this.liquidMesh = liquid;
+    }
+
+    this.toolModel.add(model);
+    this.loadedModel = model;
+    this.attachHand(model);
+  }
+
+  /**
+   * Put the gloved hand on the grip.
+   *
+   * This has to be its own load and not a cache clone: on a cold start the glove
+   * is still downloading when the first tool arrives, and a silent null clone
+   * leaves the player holding a floating bottle.
+   */
+  private attachHand(model: THREE.Group): void {
+    void ModelLibrary.load(GLOVE_MODEL)
+      .then(source => {
+        // The player can have switched tools while the glove was loading.
+        if (this.loadedModel !== model) return;
+        const hand = source.clone(true);
+        hand.name = 'toolHand';
+        // π cancels the parent's half-turn, the small tilt drops the forearm
+        // off the bottom-right of the frame instead of across the middle.
+        hand.rotation.set(0, Math.PI, -0.15);
+        hand.traverse(child => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = false;
+            child.receiveShadow = false;
+          }
+        });
+        model.add(hand);
+      })
+      .catch(error => console.warn('[DiegeticHUD] could not load the glove', error));
   }
 
   private createProgressRing(): void {
+    // One ring for the session: `toolModel.clear()` removes it on every switch,
+    // and rebuilding the shader each time would recompile it each time.
+    if (this.progressRing) {
+      this.toolModel.add(this.progressRing);
+      return;
+    }
+
     // Shader-based progress ring around tool
     const ringGeo = new THREE.RingGeometry(0.08, 0.1, 64);
 
@@ -433,47 +415,35 @@ export class DiegeticHUD {
     this.toolModel.add(this.progressRing);
   }
 
-  private liquidMesh!: THREE.Mesh;
+  private liquidMesh: THREE.Mesh | null = null;
+  private liquidMaterial: THREE.MeshPhysicalMaterial | null = null;
 
-  // Get the tool tip position and direction in world space for particle effects
+  /**
+   * Where the tool actually works, in world space, for particles and cleaning.
+   *
+   * Since Phase 5 this comes from the `SOC_*` empty inside the model instead of
+   * a hand-tuned offset, so re-modelling a nozzle cannot silently move the spray.
+   */
   getToolTipPose(): { position: THREE.Vector3; direction: THREE.Vector3 } {
     const position = new THREE.Vector3();
     const direction = new THREE.Vector3(0, -1, 0);
+    if (!this.toolModel) return { position, direction };
 
-    if (this.toolModel) {
-      // Tool tip is at different positions depending on tool
-      const tool = this.cleaningSystem.getCurrentTool();
-      const tipOffset = new THREE.Vector3();
+    const visual = TOOL_VISUALS[this.currentToolType];
+    const socket = this.loadedModel?.getObjectByName(visual.tip);
+    const quaternion = new THREE.Quaternion();
 
-      switch (tool.type) {
-        case 'spray':
-          // Spray comes from sprayer head
-          tipOffset.set(0.035, 0.22, 0);
-          direction.set(0, -1, 0);
-          break;
-        case 'mop':
-          // Mop head position
-          tipOffset.set(0, -0.02, 0);
-          direction.set(0, -1, 0);
-          break;
-        case 'vacuum':
-          // Vacuum nozzle
-          tipOffset.set(0.09, 0, -0.02);
-          direction.set(1, 0, 0);
-          break;
-        case 'trash_bag':
-          // Bag center
-          tipOffset.set(0, 0.05, 0);
-          direction.set(0, -1, 0);
-          break;
-      }
-
-      // Apply tool model transform
-      this.toolModel.localToWorld(position.copy(tipOffset));
-      this.toolModel.localToWorld(direction.copy(direction).add(tipOffset));
-      direction.sub(position).normalize();
+    if (socket) {
+      socket.getWorldPosition(position);
+      socket.getWorldQuaternion(quaternion);
+    } else {
+      // Before the GLB resolves there is no socket, and the grip is the honest
+      // guess: every tool pivots there anyway.
+      this.toolModel.getWorldPosition(position);
+      this.toolModel.getWorldQuaternion(quaternion);
     }
 
+    direction.set(...visual.tipAxis).applyQuaternion(quaternion).normalize();
     return { position, direction };
   }
 
@@ -683,7 +653,7 @@ export class DiegeticHUD {
     // Animate tool model
     if (this.toolModel) {
       const time = performance.now() * 0.001;
-      this.toolModel.position.y = -0.25 + Math.sin(time * 2) * 0.01;
+      this.toolModel.position.y = this.toolBaseY + Math.sin(time * 2) * 0.01;
       this.toolModel.rotation.z = Math.sin(time * 1.5) * 0.02;
     }
 
