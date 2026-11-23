@@ -175,6 +175,325 @@
         0.22,
         0.044
       ]
+    },
+    {
+      "path": "fixtures/bath_mat.glb",
+      "group": "fixtures",
+      "tris": 216,
+      "bytes": 11076,
+      "bounds": [
+        0.7,
+        0.45,
+        0.022
+      ]
+    },
+    {
+      "path": "fixtures/bath_panel.glb",
+      "group": "fixtures",
+      "tris": 324,
+      "bytes": 16936,
+      "bounds": [
+        1.7,
+        0.045,
+        0.52
+      ]
+    },
+    {
+      "path": "fixtures/bath_standard.glb",
+      "group": "fixtures",
+      "tris": 1212,
+      "bytes": 63752,
+      "bounds": [
+        1.7,
+        0.75,
+        0.666
+      ]
+    },
+    {
+      "path": "fixtures/boiler.glb",
+      "group": "fixtures",
+      "tris": 956,
+      "bytes": 51432,
+      "bounds": [
+        0.5,
+        0.347,
+        0.88
+      ]
+    },
+    {
+      "path": "fixtures/dishwasher.glb",
+      "group": "fixtures",
+      "tris": 960,
+      "bytes": 54036,
+      "bounds": [
+        0.6,
+        0.673,
+        0.85
+      ]
+    },
+    {
+      "path": "fixtures/fridge_freezer.glb",
+      "group": "fixtures",
+      "tris": 972,
+      "bytes": 54312,
+      "bounds": [
+        0.7,
+        0.78,
+        1.88
+      ]
+    },
+    {
+      "path": "fixtures/hob_4burner.glb",
+      "group": "fixtures",
+      "tris": 2284,
+      "bytes": 128428,
+      "bounds": [
+        0.6,
+        0.52,
+        0.022
+      ]
+    },
+    {
+      "path": "fixtures/kettle.glb",
+      "group": "fixtures",
+      "tris": 1020,
+      "bytes": 57164,
+      "bounds": [
+        0.215,
+        0.18,
+        0.23
+      ]
+    },
+    {
+      "path": "fixtures/kitchen_bin.glb",
+      "group": "fixtures",
+      "tris": 1056,
+      "bytes": 54800,
+      "bounds": [
+        0.304,
+        0.332,
+        0.65
+      ]
+    },
+    {
+      "path": "fixtures/kitchen_corner.glb",
+      "group": "fixtures",
+      "tris": 648,
+      "bytes": 38088,
+      "bounds": [
+        0.62,
+        0.636,
+        0.9
+      ]
+    },
+    {
+      "path": "fixtures/kitchen_run_1m.glb",
+      "group": "fixtures",
+      "tris": 972,
+      "bytes": 58336,
+      "bounds": [
+        1.0,
+        0.636,
+        0.9
+      ]
+    },
+    {
+      "path": "fixtures/kitchen_run_2m.glb",
+      "group": "fixtures",
+      "tris": 1836,
+      "bytes": 104440,
+      "bounds": [
+        2.0,
+        0.636,
+        0.9
+      ]
+    },
+    {
+      "path": "fixtures/kitchen_sink.glb",
+      "group": "fixtures",
+      "tris": 1620,
+      "bytes": 91900,
+      "bounds": [
+        0.8,
+        0.646,
+        1.175
+      ]
+    },
+    {
+      "path": "fixtures/kitchen_upper.glb",
+      "group": "fixtures",
+      "tris": 864,
+      "bytes": 49600,
+      "bounds": [
+        0.99,
+        0.379,
+        0.7
+      ]
+    },
+    {
+      "path": "fixtures/microwave.glb",
+      "group": "fixtures",
+      "tris": 920,
+      "bytes": 52768,
+      "bounds": [
+        0.5,
+        0.397,
+        0.3
+      ]
+    },
+    {
+      "path": "fixtures/mirror_cabinet.glb",
+      "group": "fixtures",
+      "tris": 432,
+      "bytes": 23948,
+      "bounds": [
+        0.6,
+        0.176,
+        0.7
+      ]
+    },
+    {
+      "path": "fixtures/oven_builtin.glb",
+      "group": "fixtures",
+      "tris": 1100,
+      "bytes": 66636,
+      "bounds": [
+        0.6,
+        0.623,
+        0.6
+      ]
+    },
+    {
+      "path": "fixtures/radiator_panel.glb",
+      "group": "fixtures",
+      "tris": 1700,
+      "bytes": 100528,
+      "bounds": [
+        0.822,
+        0.14,
+        0.56
+      ]
+    },
+    {
+      "path": "fixtures/range_hood.glb",
+      "group": "fixtures",
+      "tris": 760,
+      "bytes": 37156,
+      "bounds": [
+        0.9,
+        0.5,
+        0.445
+      ]
+    },
+    {
+      "path": "fixtures/shower_enclosure.glb",
+      "group": "fixtures",
+      "tris": 972,
+      "bytes": 52108,
+      "bounds": [
+        0.92,
+        0.93,
+        2.01
+      ]
+    },
+    {
+      "path": "fixtures/shower_riser.glb",
+      "group": "fixtures",
+      "tris": 984,
+      "bytes": 53884,
+      "bounds": [
+        0.23,
+        0.22,
+        1.195
+      ]
+    },
+    {
+      "path": "fixtures/shower_tray.glb",
+      "group": "fixtures",
+      "tris": 964,
+      "bytes": 56560,
+      "bounds": [
+        0.9,
+        0.9,
+        0.21
+      ]
+    },
+    {
+      "path": "fixtures/splashback.glb",
+      "group": "fixtures",
+      "tris": 540,
+      "bytes": 28692,
+      "bounds": [
+        1.0,
+        0.016,
+        0.6
+      ]
+    },
+    {
+      "path": "fixtures/toaster.glb",
+      "group": "fixtures",
+      "tris": 540,
+      "bytes": 28920,
+      "bounds": [
+        0.295,
+        0.17,
+        0.184
+      ]
+    },
+    {
+      "path": "fixtures/toilet_close_coupled.glb",
+      "group": "fixtures",
+      "tris": 1060,
+      "bytes": 58504,
+      "bounds": [
+        0.38,
+        0.56,
+        0.872
+      ]
+    },
+    {
+      "path": "fixtures/toilet_roll_holder.glb",
+      "group": "fixtures",
+      "tris": 484,
+      "bytes": 27380,
+      "bounds": [
+        0.16,
+        0.135,
+        0.125
+      ]
+    },
+    {
+      "path": "fixtures/towel_rail.glb",
+      "group": "fixtures",
+      "tris": 432,
+      "bytes": 24296,
+      "bounds": [
+        0.6,
+        0.097,
+        0.34
+      ]
+    },
+    {
+      "path": "fixtures/vanity_unit.glb",
+      "group": "fixtures",
+      "tris": 1136,
+      "bytes": 66980,
+      "bounds": [
+        0.92,
+        0.543,
+        1.04
+      ]
+    },
+    {
+      "path": "fixtures/washing_machine.glb",
+      "group": "fixtures",
+      "tris": 1608,
+      "bytes": 90372,
+      "bounds": [
+        0.6,
+        0.63,
+        0.865
+      ]
     }
   ]
 }

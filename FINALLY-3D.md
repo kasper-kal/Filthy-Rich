@@ -109,7 +109,8 @@ assets, starting the next phase, or committing with a check failing.
 
 | Phase | Finished | Commit | Note |
 |---|---|---|---|
-| 1 House shell | 23 Nov 2026 | this commit | 16 assets, 7,756 tris; walls/doors/windows/trim wired into `Room.ts` |
+| 1 House shell | 23 Nov 2026 | `8f98a30` | 16 assets, 7,756 tris; walls/doors/windows/trim wired into `Room.ts` |
+| 2 Fixtures | 23 Nov 2026 | this commit | 29 assets, 28,572 tris; kitchen/bath/laundry placed; env map added |
 
 ---
 
@@ -689,9 +690,44 @@ in full (the reduced kit in §21 may drop them).
 
 ---
 
-## §6. Phase 2 — fixtures and appliances `[ ]`
+## §6. Phase 2 — fixtures and appliances `[x]`
 
-**Status:** `[ ]` not started · **Depends on:** Phase 1 (walls for them to stand against) · **Done when:** kitchen and bathroom are furnished, and every washable fixture is UV-mapped well enough to carry a dirt mask the cleaning code can paint on.
+**Status:** `[x]` shipped 23 Nov 2026 · **Depends on:** Phase 1 (walls for them to stand against) · **Done when:** kitchen and bathroom are furnished, and every washable fixture is UV-mapped well enough to carry a dirt mask the cleaning code can paint on.
+
+### 6.0 What shipped
+
+Twenty-nine assets, **28,572 tris, 1.5 MB**, built by
+`tools/blender/build_fixtures.py`, every one UV-mapped (`TEXCOORD_0`, for the
+dirt masks in Phase 9), AO-baked and pruned.
+
+| built | where it stands |
+|---|---|
+| `fridge_freezer`, `kitchen_run_1m`, `dishwasher`, `kitchen_sink`, `kitchen_corner` | the kitchen's south wall run, left to right, 3.55 m → 7.43 m |
+| `hob_4burner`, `range_hood`, `splashback`, `kitchen_upper` ×2, `microwave`, `kettle`, `toaster`, `kitchen_bin` | worktop and wall above |
+| `washing_machine`, `boiler` | kitchen west wall, away from both doorways |
+| `bath_standard`, `bath_panel`, `bath_mat` | bathroom north wall |
+| `toilet_close_coupled`, `toilet_roll_holder` | bathroom east wall |
+| `vanity_unit`, `mirror_cabinet`, `towel_rail` | bathroom south wall |
+| `shower_tray`, `shower_enclosure`, `shower_riser` | bathroom south-west corner |
+| `radiator_panel` ×2 | living room and entrance hall |
+
+Placements live in `src/world/FixtureLayout.ts` (world metres, rotation so each
+unit faces into its room); `Room.createFixtures()` loads and clones them, and
+adds every fixture mesh to `getCleanableSurfaces()` so the sponge can reach them.
+
+**Two engine fixes this phase needed:**
+
+1. **No environment map.** Every metal in the game (chrome taps, stainless
+   appliances) rendered pure black, because a metal with nothing to reflect has
+   no colour. `SceneManager.createScene()` now generates a small PMREM room
+   probe at intensity 0.5.
+2. **Prune was eating the UVs.** `gltf-transform prune` drops attributes no
+   material uses, which silently removed `TEXCOORD_0` — the exact thing the dirt
+   masks need. Always prune with `--keep-attributes true`.
+
+Deferred: the `_filthy` twins are correctly not built (§B.12); dirt arrives as
+masks/decals in Phase 9. The hob, oven, fridge and cooker are separate models
+that can be swapped per kitchen later.
 
 Folder: `public/models/fixtures/`
 

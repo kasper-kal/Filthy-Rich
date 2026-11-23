@@ -5,6 +5,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { HOUSE_LAYOUT, getFloorBounds, getAllWallSurfaces } from './HouseLayout.js';
 import type { DoorData, WindowData } from './HouseLayout.js';
 import { ModelLibrary } from '../world/ModelLibrary.js';
+import { FIXTURE_PLACEMENTS } from '../world/FixtureLayout.js';
 
 const MODULE_HEIGHT = 3.0;
 const WALL_HALF_THICKNESS = 0.065;
@@ -121,6 +122,7 @@ export class Room {
   public doorFrames: THREE.Group[] = [];
   public windowFrames: THREE.Group[] = [];
   public baseboards: THREE.Mesh[] = [];
+  public fixtures: THREE.Mesh[] = [];
   public trashManager!: TrashManager;
 
   private scene: THREE.Scene;
@@ -134,6 +136,7 @@ export class Room {
   async init(): Promise<void> {
     await ModelLibrary.preload(SHELL_ASSETS);
     this.createHouse();
+    await this.createFixtures();
     this.scene.add(this.houseGroup);
 
     this.trashManager = new TrashManager(this.scene, this.floor);
@@ -545,12 +548,37 @@ export class Room {
     }
   }
 
+  /** Kitchen, bathroom, laundry and radiators (§6), one clone per placement. */
+  private async createFixtures(): Promise<void> {
+    const paths = [...new Set(FIXTURE_PLACEMENTS.map(placement => placement.asset))].map(
+      asset => `/models/fixtures/${asset}.glb`
+    );
+    await ModelLibrary.preload(paths);
+
+    const group = new THREE.Group();
+    group.name = 'fixtures';
+
+    for (const placement of FIXTURE_PLACEMENTS) {
+      const model = ModelLibrary.clone(`/models/fixtures/${placement.asset}.glb`);
+      if (!model) continue;
+      model.position.set(placement.x, placement.y, placement.z);
+      model.rotation.y = placement.rotation;
+      model.name = placement.asset;
+      model.traverse(child => {
+        if (child instanceof THREE.Mesh) this.fixtures.push(child);
+      });
+      group.add(model);
+    }
+
+    this.houseGroup.add(group);
+  }
+
   update(delta: number): void {
     this.trashManager?.update(delta);
   }
 
   getCleanableSurfaces(): THREE.Mesh[] {
-    return [this.floor, ...this.walls];
+    return [...this.fixtures, this.floor, ...this.walls];
   }
 
   getFloorBounds(): { min: THREE.Vector2; max: THREE.Vector2 } {

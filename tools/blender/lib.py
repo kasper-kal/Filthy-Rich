@@ -27,10 +27,22 @@ PALETTE = {
     "oak_dark": ((0.20, 0.12, 0.06), 0.50, 0.0),
     "walnut": ((0.13, 0.075, 0.045), 0.45, 0.0),
     "brass": ((0.60, 0.42, 0.13), 0.32, 1.0),
-    "steel": ((0.08, 0.08, 0.09), 0.38, 0.85),
+    "steel": ((0.42, 0.42, 0.44), 0.30, 1.0),
     "glass_clear": ((0.55, 0.68, 0.72), 0.08, 0.0),
     "plastic_white": ((0.72, 0.72, 0.70), 0.45, 0.0),
     "grime": ((0.09, 0.075, 0.055), 0.95, 0.0),
+    "chrome": ((0.72, 0.72, 0.74), 0.08, 1.0),
+    "cast_iron": ((0.05, 0.05, 0.055), 0.55, 0.9),
+    "ceramic": ((0.82, 0.81, 0.78), 0.12, 0.0),
+    "paper": ((0.75, 0.73, 0.68), 0.85, 0.0),
+    "linen": ((0.62, 0.57, 0.48), 0.90, 0.0),
+    "glass_frosted": ((0.70, 0.75, 0.78), 0.35, 0.0),
+    "brick": ((0.28, 0.13, 0.09), 0.90, 0.0),
+    "render": ((0.62, 0.60, 0.55), 0.92, 0.0),
+    "roof_tile": ((0.16, 0.14, 0.13), 0.85, 0.0),
+    "concrete": ((0.45, 0.45, 0.43), 0.90, 0.0),
+    "asphalt": ((0.07, 0.07, 0.075), 0.95, 0.0),
+    "rubber": ((0.03, 0.03, 0.035), 0.80, 0.0),
 }
 
 BUDGET = {
@@ -87,6 +99,20 @@ def cyl(name, radius, depth, loc=(0, 0, 0), mat="brass", verts=20, bevel=0.002, 
         obj.rotation_euler = rot
         bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
     return finish(obj, mat, bevel, 2)
+
+
+def torus(name, major, minor, loc=(0, 0, 0), mat="steel", rot=(0, 0, 0), major_segments=24, minor_segments=8):
+    bpy.ops.mesh.primitive_torus_add(
+        major_radius=major,
+        minor_radius=minor,
+        major_segments=major_segments,
+        minor_segments=minor_segments,
+        location=loc,
+        rotation=rot,
+    )
+    obj = bpy.context.object
+    obj.name = name
+    return finish(obj, mat, 0.0)
 
 
 def finish(obj, mat, bevel=0.008, segments=2, smooth_angle=38):

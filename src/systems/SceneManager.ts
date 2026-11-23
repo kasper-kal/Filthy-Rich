@@ -3,6 +3,7 @@ import { Room } from './Room.js';
 import { FurnitureManager } from './FurnitureManager.js';
 import { CameraController } from './CameraController.js';
 import { DEVICE } from './DeviceProfile.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
 export class SceneManager {
   public scene!: THREE.Scene;
@@ -36,6 +37,15 @@ export class SceneManager {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0d0d10);
     this.scene.fog = new THREE.Fog(0x0d0d10, 8, 25);
+
+    // Metals have nothing to reflect without an environment, so chrome taps and
+    // steel appliances rendered pure black. A small room probe fixes it; the
+    // intensity is kept low so the house stays moody rather than showroom-bright.
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    const environment = pmrem.fromScene(new RoomEnvironment(), 0.04);
+    this.scene.environment = environment.texture;
+    this.scene.environmentIntensity = 0.5;
+    pmrem.dispose();
   }
 
   private createCamera(): void {
