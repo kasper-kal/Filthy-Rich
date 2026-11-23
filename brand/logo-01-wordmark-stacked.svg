@@ -1,34 +1,74 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Filthy Rich wordmark">
-  <title>Filthy Rich — stacked wordmark</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Filthy Rich wordmark, half cleaned">
+  <title>Filthy Rich — half cleaned</title>
   <defs>
-    <!-- one monoline alphabet: 30 wide, 40 cap height, 10 stroke, square terminals -->
-    <path id="c-F" d="M 5 5 V 35 M 5 5 H 25 M 5 20 H 21"/>
-    <path id="c-I" d="M 15 5 V 35"/>
-    <path id="c-L" d="M 5 5 V 35 H 25"/>
-    <path id="c-T" d="M 0 5 H 30 M 15 5 V 35"/>
-    <path id="c-H" d="M 5 5 V 35 M 25 5 V 35 M 5 20 H 25"/>
-    <path id="c-Y" d="M 5 5 L 15 20 L 25 5 M 15 20 V 35"/>
-    <path id="c-R" d="M 5 35 V 5 H 17 A 8 8 0 0 1 17 21 H 5 M 17 21 L 26 35"/>
-    <path id="c-C" d="M 25 12 A 12 12 0 1 0 25 28"/>
+    <radialGradient id="w-bg" cx="0.5" cy="0.32" r="0.8">
+      <stop offset="0" stop-color="#17171e"/>
+      <stop offset="1" stop-color="#07070a"/>
+    </radialGradient>
+    <linearGradient id="w-gold" x1="0" y1="0" x2="0.25" y2="1">
+      <stop offset="0" stop-color="#fff0b8"/>
+      <stop offset="0.42" stop-color="#f2c14e"/>
+      <stop offset="1" stop-color="#b8811f"/>
+    </linearGradient>
+
+    <!-- heavy caps: 30 wide, 40 tall, 14 stem, square terminals -->
+    <path id="w-F" d="M 7 7 V 33 M 7 7 H 23 M 7 20 H 19"/>
+    <path id="w-I" d="M 15 7 V 33"/>
+    <path id="w-L" d="M 7 7 V 33 H 23"/>
+    <path id="w-T" d="M 0 7 H 30 M 15 7 V 33"/>
+    <path id="w-H" d="M 7 7 V 33 M 23 7 V 33 M 7 20 H 23"/>
+    <path id="w-Y" d="M 7 7 L 15 20 L 23 7 M 15 20 V 33"/>
+    <path id="w-R" d="M 7 33 V 7 H 16 A 7 7 0 0 1 16 21 H 7 M 16 21 L 24 33"/>
+    <path id="w-C" d="M 24 12 A 11 11 0 1 0 24 28"/>
+
+    <clipPath id="w-below-a"><rect x="0" y="104" width="256" height="80"/></clipPath>
+    <clipPath id="w-below-b"><rect x="0" y="162" width="256" height="80"/></clipPath>
   </defs>
 
-  <rect width="256" height="256" rx="40" fill="#0b0b0e"/>
+  <rect width="256" height="256" fill="url(#w-bg)"/>
 
-  <!-- FILTHY: the state you start in -->
-  <g fill="none" stroke="#8a7a60" stroke-width="10" stroke-linecap="square" stroke-linejoin="miter">
-    <use href="#c-F" x="25" y="78"/>
-    <use href="#c-I" x="60" y="78"/>
-    <use href="#c-L" x="95" y="78"/>
-    <use href="#c-T" x="130" y="78"/>
-    <use href="#c-H" x="165" y="78"/>
-    <use href="#c-Y" x="200" y="78"/>
+  <!-- FILTHY -->
+  <g fill="none" stroke="url(#w-gold)" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter">
+    <use href="#w-F" x="30.5" y="79"/>
+    <use href="#w-I" x="63.5" y="79"/>
+    <use href="#w-L" x="96.5" y="79"/>
+    <use href="#w-T" x="129.5" y="79"/>
+    <use href="#w-H" x="162.5" y="79"/>
+    <use href="#w-Y" x="195.5" y="79"/>
+  </g>
+  <g clip-path="url(#w-below-a)" fill="none" stroke="#4a3f2e" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter">
+    <use href="#w-F" x="30.5" y="79"/>
+    <use href="#w-I" x="63.5" y="79"/>
+    <use href="#w-L" x="96.5" y="79"/>
+    <use href="#w-T" x="129.5" y="79"/>
+    <use href="#w-H" x="162.5" y="79"/>
+    <use href="#w-Y" x="195.5" y="79"/>
   </g>
 
-  <!-- RICH: what you get for it -->
-  <g fill="none" stroke="#f2c14e" stroke-width="10" stroke-linecap="square" stroke-linejoin="miter">
-    <use href="#c-R" x="60" y="140"/>
-    <use href="#c-I" x="95" y="140"/>
-    <use href="#c-C" x="130" y="140"/>
-    <use href="#c-H" x="165" y="140"/>
+  <!-- RICH -->
+  <g fill="none" stroke="url(#w-gold)" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter">
+    <use href="#w-R" x="63.5" y="137"/>
+    <use href="#w-I" x="96.5" y="137"/>
+    <use href="#w-C" x="129.5" y="137"/>
+    <use href="#w-H" x="162.5" y="137"/>
+  </g>
+  <g clip-path="url(#w-below-b)" fill="none" stroke="#4a3f2e" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter">
+    <use href="#w-R" x="63.5" y="137"/>
+    <use href="#w-I" x="96.5" y="137"/>
+    <use href="#w-C" x="129.5" y="137"/>
+    <use href="#w-H" x="162.5" y="137"/>
+  </g>
+
+  <!-- the wipe itself -->
+  <rect x="30.5" y="103" width="195" height="2.5" fill="#fff0b8" opacity="0.85"/>
+  <rect x="63.5" y="161" width="129" height="2.5" fill="#fff0b8" opacity="0.85"/>
+
+  <!-- grime running off the edge -->
+  <g fill="#4a3f2e">
+    <rect x="58" y="105" width="4" height="13" rx="2"/>
+    <rect x="118" y="105" width="4" height="20" rx="2"/>
+    <rect x="186" y="105" width="4" height="9" rx="2"/>
+    <rect x="92" y="163" width="4" height="16" rx="2"/>
+    <rect x="158" y="163" width="4" height="10" rx="2"/>
   </g>
 </svg>
