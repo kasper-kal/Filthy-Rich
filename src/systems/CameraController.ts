@@ -4,7 +4,7 @@ export class CameraController {
   public camera: THREE.PerspectiveCamera;
   // Matches the starting camera position below; update() drives the camera
   // from this target, so the two have to agree.
-  public target = new THREE.Vector3(0, 1.6, 6);
+  public target = new THREE.Vector3(0, 1.6, 7);
   private baseFov = 75;
 
   private yaw = 0;
@@ -62,7 +62,7 @@ export class CameraController {
       0.05,
       100
     );
-    this.camera.position.set(0, 1.6, 6); // Start in entrance
+    this.camera.position.set(0, 1.6, 7); // Start in entrance, clear of the doors
     this.camera.lookAt(0, 1.6, 0);
 
     this.setupInput(renderer.domElement);

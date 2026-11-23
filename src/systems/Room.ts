@@ -1,12 +1,123 @@
 import * as THREE from 'three';
 import { TrashManager } from './TrashManager.js';
 import type { RoomData } from './HouseLayout.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { HOUSE_LAYOUT, getFloorBounds, getAllWallSurfaces } from './HouseLayout.js';
+import type { DoorData, WindowData } from './HouseLayout.js';
+import { ModelLibrary } from '../world/ModelLibrary.js';
+
+const MODULE_HEIGHT = 3.0;
+const WALL_HALF_THICKNESS = 0.065;
+
+const ARCH = '/models/architecture/';
+const WALL_MODULES = {
+  white: ARCH + 'wall_1m.glb',
+  cream: ARCH + 'wall_1m_cream.glb',
+  wet: ARCH + 'wall_1m_wet.glb',
+};
+const FLOOR_MODULES = {
+  planks: ARCH + 'floor_planks.glb',
+  tile: ARCH + 'floor_tile.glb',
+  tileSmall: ARCH + 'floor_tile_small.glb',
+};
+const CEILING_MODULE = ARCH + 'ceiling_plain.glb';
+const SKIRTING = ARCH + 'skirting_modern.glb';
+const CROWN = ARCH + 'crown_plain.glb';
+const DOOR_FRAME = ARCH + 'door_frame_std.glb';
+const DOOR_LEAF = ARCH + 'door_leaf_panel.glb';
+const DOOR_HANDLE = ARCH + 'door_handle_lever.glb';
+const WINDOW_FRAME = ARCH + 'window_frame_std.glb';
+const WINDOW_GLASS = ARCH + 'window_glass.glb';
+const WINDOW_SILL = ARCH + 'window_sill.glb';
+
+const SHELL_ASSETS = [
+  ...Object.values(WALL_MODULES),
+  ...Object.values(FLOOR_MODULES),
+  CEILING_MODULE,
+  SKIRTING,
+  CROWN,
+  DOOR_FRAME,
+  DOOR_LEAF,
+  DOOR_HANDLE,
+  WINDOW_FRAME,
+  WINDOW_GLASS,
+  WINDOW_SILL,
+];
+
+interface WallFrame {
+  name: 'north' | 'south' | 'east' | 'west';
+  width: number;
+  rotY: number;
+  origin: THREE.Vector3;
+  axis: THREE.Vector3;
+}
+
+interface Opening {
+  start: number;
+  end: number;
+  bottom: number;
+  top: number;
+}
+
+function wallFrames(data: RoomData, cx: number, cz: number, halfW: number, halfD: number): WallFrame[] {
+  return [
+    { name: 'north', width: data.size.x, rotY: 0, origin: new THREE.Vector3(cx, 0, cz - halfD), axis: new THREE.Vector3(1, 0, 0) },
+    { name: 'south', width: data.size.x, rotY: Math.PI, origin: new THREE.Vector3(cx, 0, cz + halfD), axis: new THREE.Vector3(-1, 0, 0) },
+    { name: 'west', width: data.size.z, rotY: Math.PI / 2, origin: new THREE.Vector3(cx - halfW, 0, cz), axis: new THREE.Vector3(0, 0, 1) },
+    { name: 'east', width: data.size.z, rotY: -Math.PI / 2, origin: new THREE.Vector3(cx + halfW, 0, cz), axis: new THREE.Vector3(0, 0, -1) },
+  ];
+}
+
+function openingsOn(data: RoomData, frame: WallFrame): Opening[] {
+  const openings: Opening[] = [];
+  for (const door of data.doors.filter(d => d.wall === frame.name)) {
+    const centre = (door.position - 0.5) * frame.width;
+    openings.push({ start: centre - door.width / 2, end: centre + door.width / 2, bottom: 0, top: door.height });
+  }
+  for (const window of data.windows.filter(w => w.wall === frame.name)) {
+    const centre = (window.position - 0.5) * frame.width;
+    openings.push({
+      start: centre - window.width / 2,
+      end: centre + window.width / 2,
+      bottom: window.heightFromFloor,
+      top: window.heightFromFloor + window.height,
+    });
+  }
+  return openings.sort((a, b) => a.start - b.start);
+}
+
+/** Full-height piers between openings. */
+function piersBetween(openings: Opening[], width: number): Opening[] {
+  const piers: Opening[] = [];
+  let cursor = -width / 2;
+  for (const opening of openings) {
+    if (opening.start - cursor > 0.02) {
+      piers.push({ start: cursor, end: opening.start, bottom: 0, top: Infinity });
+    }
+    cursor = Math.max(cursor, opening.end);
+  }
+  if (width / 2 - cursor > 0.02) {
+    piers.push({ start: cursor, end: width / 2, bottom: 0, top: Infinity });
+  }
+  return piers;
+}
+
+/** Runs along a wall that skip a set of spans (doorways, for trim). */
+function runsExcluding(spans: { start: number; end: number }[], width: number): { start: number; end: number }[] {
+  const runs: { start: number; end: number }[] = [];
+  let cursor = -width / 2;
+  for (const span of [...spans].sort((a, b) => a.start - b.start)) {
+    if (span.start - cursor > 0.15) runs.push({ start: cursor, end: span.start });
+    cursor = Math.max(cursor, span.end);
+  }
+  if (width / 2 - cursor > 0.15) runs.push({ start: cursor, end: width / 2 });
+  return runs;
+}
 
 export class Room {
   public floor!: THREE.Mesh;
   public walls: THREE.Mesh[] = [];
-  public ceilings: THREE.Mesh[] = [];
+  public ceilings: THREE.Group[] = [];
   public doorFrames: THREE.Group[] = [];
   public windowFrames: THREE.Group[] = [];
   public baseboards: THREE.Mesh[] = [];
@@ -21,6 +132,7 @@ export class Room {
   }
 
   async init(): Promise<void> {
+    await ModelLibrary.preload(SHELL_ASSETS);
     this.createHouse();
     this.scene.add(this.houseGroup);
 
@@ -59,54 +171,176 @@ export class Room {
     const cx = data.position.x;
     const cy = data.position.y;
     const cz = data.position.z;
+    const floorY = cy - halfH;
 
-    // Floor
-    const floorGeo = new THREE.PlaneGeometry(data.size.x, data.size.z, 50, 50);
-    const floor = new THREE.Mesh(floorGeo, data.floorMaterial.clone());
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.set(cx, cy - halfH, cz);
-    floor.receiveShadow = true;
+    const floor = this.buildFloor(data, cx, floorY, cz);
     floor.name = `floor_${data.name}`;
     group.add(floor);
+    if (data.name === 'entrance') this.floor = floor;
 
-    // Add subtle floor texture via vertex displacement
-    const positions = floorGeo.attributes.position;
-    for (let i = 0; i < positions.count; i++) {
-      const x = positions.getX(i);
-      const y = positions.getY(i);
-      const noise = Math.sin(x * 12) * Math.cos(y * 12) * 0.002;
-      positions.setZ(i, noise);
-    }
-    floorGeo.computeVertexNormals();
-
-    // Ceiling
-    const ceilingGeo = new THREE.PlaneGeometry(data.size.x, data.size.z);
-    const ceiling = new THREE.Mesh(ceilingGeo, data.ceilingMaterial.clone());
-    ceiling.rotation.x = Math.PI / 2;
-    ceiling.position.set(cx, cy + halfH, cz);
-    ceiling.receiveShadow = true;
-    // The roof has to block the sun, otherwise the interior floor is lit as if
-    // the house had no ceiling at all.
-    ceiling.castShadow = true;
+    const ceiling = this.buildCeiling(data, cx, cy + halfH, cz);
     ceiling.name = `ceiling_${data.name}`;
     this.ceilings.push(ceiling);
     group.add(ceiling);
 
-    // Walls with door/window cutouts
     this.createWallsWithOpenings(group, data, cx, cy, cz, halfW, halfH, halfD);
-
-    // Baseboards
-    this.createBaseboards(group, data, cx, cy, cz, halfW, halfH, halfD);
-
-    // Door frames
+    this.createTrim(group, data, cx, cy, cz, halfW, halfH, halfD);
     this.createDoorFrames(group, data, cx, cy, cz, halfW, halfH, halfD);
-
-    // Window frames
     this.createWindowFrames(group, data, cx, cy, cz, halfW, halfH, halfD);
 
-    // Crown molding
-    this.createCrownMolding(group, data, cx, cy, cz, halfW, halfH, halfD);
+    return group;
+  }
 
+  private wallPathFor(data: RoomData): string {
+    if (data.name.includes('bath') || data.name.includes('kitchen')) return WALL_MODULES.wet;
+    if (data.name.includes('living') || data.name.includes('bed')) return WALL_MODULES.cream;
+    return WALL_MODULES.white;
+  }
+
+  private floorPathFor(data: RoomData): string {
+    if (data.name.includes('bath')) return FLOOR_MODULES.tileSmall;
+    if (data.name.includes('kitchen')) return FLOOR_MODULES.tile;
+    return FLOOR_MODULES.planks;
+  }
+
+  /** Merge every placement of one asset into as few meshes as the materials allow. */
+  private buildPlacements(path: string, matrices: THREE.Matrix4[]): THREE.Group {
+    const group = new THREE.Group();
+    const template = ModelLibrary.clone(path);
+    if (!template || matrices.length === 0) return group;
+
+    template.updateMatrixWorld(true);
+    const parts: { geometry: THREE.BufferGeometry; material: THREE.Material }[] = [];
+    template.traverse(child => {
+      if (!(child instanceof THREE.Mesh)) return;
+      const material = Array.isArray(child.material) ? child.material[0] : child.material;
+      // include the node transform: exports are not guaranteed to be identity
+      parts.push({ geometry: child.geometry.clone().applyMatrix4(child.matrixWorld), material });
+    });
+
+    const buckets = new Map<string, { material: THREE.Material; geometries: THREE.BufferGeometry[] }>();
+    for (const matrix of matrices) {
+      for (const part of parts) {
+        const key = part.material.uuid;
+        let bucket = buckets.get(key);
+        if (!bucket) {
+          bucket = { material: part.material, geometries: [] };
+          buckets.set(key, bucket);
+        }
+        bucket.geometries.push(part.geometry.clone().applyMatrix4(matrix));
+      }
+    }
+
+    for (const bucket of buckets.values()) {
+      const merged = mergeGeometries(bucket.geometries, false);
+      bucket.geometries.forEach(geometry => geometry.dispose());
+      if (!merged) continue;
+      const mesh = new THREE.Mesh(merged, bucket.material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      group.add(mesh);
+    }
+    return group;
+  }
+
+  /** A row of 1 m modules of `path` along one wall. */
+  private buildRow(
+    path: string,
+    frame: WallFrame,
+    u: number,
+    width: number,
+    baseY: number,
+    options: { scaleY?: number; inset?: number; count?: number } = {}
+  ): THREE.Group {
+    const scaleY = options.scaleY ?? 1;
+    const inset = options.inset ?? 0;
+    const count = options.count ?? Math.min(16, Math.max(1, Math.round(width)));
+    const moduleWidth = width / count;
+
+    const normalX = Math.sin(frame.rotY);
+    const normalZ = Math.cos(frame.rotY);
+    const origin = new THREE.Vector3(
+      frame.origin.x + frame.axis.x * u + normalX * inset,
+      baseY,
+      frame.origin.z + frame.axis.z * u + normalZ * inset
+    );
+
+    const matrices: THREE.Matrix4[] = [];
+    for (let i = 0; i < count; i++) {
+      const local = new THREE.Matrix4()
+        .makeTranslation(origin.x, origin.y, origin.z)
+        .multiply(new THREE.Matrix4().makeRotationY(frame.rotY))
+        .multiply(new THREE.Matrix4().makeTranslation(-width / 2 + moduleWidth * (i + 0.5), 0, 0))
+        .multiply(new THREE.Matrix4().makeScale(moduleWidth, scaleY, 1));
+      matrices.push(local);
+    }
+    return this.buildPlacements(path, matrices);
+  }
+
+  private registerWall(group: THREE.Group, row: THREE.Group): void {
+    group.add(row);
+    row.traverse(child => {
+      if (child instanceof THREE.Mesh) this.walls.push(child);
+    });
+  }
+
+  private buildFloor(data: RoomData, cx: number, floorY: number, cz: number): THREE.Mesh {
+    const countX = Math.max(1, Math.round(data.size.x));
+    const countZ = Math.max(1, Math.round(data.size.z));
+    const matrices: THREE.Matrix4[] = [];
+    for (let i = 0; i < countX; i++) {
+      for (let j = 0; j < countZ; j++) {
+        matrices.push(
+          new THREE.Matrix4()
+            .makeTranslation(
+              cx - data.size.x / 2 + (data.size.x / countX) * (i + 0.5),
+              floorY,
+              cz - data.size.z / 2 + (data.size.z / countZ) * (j + 0.5)
+            )
+            .multiply(new THREE.Matrix4().makeScale(data.size.x / countX, 1, data.size.z / countZ))
+        );
+      }
+    }
+
+    const built = this.buildPlacements(this.floorPathFor(data), matrices);
+    const merged = built.children.find((child): child is THREE.Mesh => child instanceof THREE.Mesh);
+    if (merged) return merged;
+
+    // Library empty (offline, blocked asset): keep the game playable.
+    const fallback = new THREE.Mesh(new THREE.PlaneGeometry(data.size.x, data.size.z), data.floorMaterial.clone());
+    fallback.rotation.x = -Math.PI / 2;
+    fallback.position.set(cx, floorY, cz);
+    fallback.receiveShadow = true;
+    return fallback;
+  }
+
+  private buildCeiling(data: RoomData, cx: number, ceilingY: number, cz: number): THREE.Group {
+    const countX = Math.max(1, Math.round(data.size.x));
+    const countZ = Math.max(1, Math.round(data.size.z));
+    const matrices: THREE.Matrix4[] = [];
+    for (let i = 0; i < countX; i++) {
+      for (let j = 0; j < countZ; j++) {
+        matrices.push(
+          new THREE.Matrix4()
+            .makeTranslation(
+              cx - data.size.x / 2 + (data.size.x / countX) * (i + 0.5),
+              ceilingY,
+              cz - data.size.z / 2 + (data.size.z / countZ) * (j + 0.5)
+            )
+            .multiply(new THREE.Matrix4().makeScale(data.size.x / countX, 1, data.size.z / countZ))
+        );
+      }
+    }
+    const group = this.buildPlacements(CEILING_MODULE, matrices);
+    if (group.children.length === 0) {
+      const fallback = new THREE.Mesh(new THREE.PlaneGeometry(data.size.x, data.size.z), data.ceilingMaterial.clone());
+      fallback.rotation.x = Math.PI / 2;
+      fallback.position.set(cx, ceilingY, cz);
+      group.add(fallback);
+    }
+    group.traverse(child => {
+      if (child instanceof THREE.Mesh) child.castShadow = true;
+    });
     return group;
   }
 
@@ -120,201 +354,45 @@ export class Room {
     halfH: number,
     halfD: number
   ): void {
-    const wallMaterial = data.wallMaterial;
+    const floorY = cy - halfH;
+    const wallPath = this.wallPathFor(data);
 
-    // For each wall, we may need to split it into segments around doors/windows
-    const wallDefinitions = [
-      {
-        name: 'north',
-        normal: new THREE.Vector3(0, 0, 1),
-        center: new THREE.Vector3(cx, cy, cz - halfD),
-        width: data.size.x,
-        rotation: new THREE.Euler(0, Math.PI, 0),
-      },
-      {
-        name: 'south',
-        normal: new THREE.Vector3(0, 0, -1),
-        center: new THREE.Vector3(cx, cy, cz + halfD),
-        width: data.size.x,
-        rotation: new THREE.Euler(0, 0, 0),
-      },
-      {
-        name: 'west',
-        normal: new THREE.Vector3(1, 0, 0),
-        center: new THREE.Vector3(cx - halfW, cy, cz),
-        width: data.size.z,
-        rotation: new THREE.Euler(0, -Math.PI / 2, 0),
-      },
-      {
-        name: 'east',
-        normal: new THREE.Vector3(-1, 0, 0),
-        center: new THREE.Vector3(cx + halfW, cy, cz),
-        width: data.size.z,
-        rotation: new THREE.Euler(0, Math.PI / 2, 0),
-      },
-    ];
+    for (const frame of wallFrames(data, cx, cz, halfW, halfD)) {
+      const openings = openingsOn(data, frame);
 
-    for (const wallDef of wallDefinitions) {
-      const doorsOnWall = data.doors.filter(d => d.wall === wallDef.name);
-      const windowsOnWall = data.windows.filter(w => w.wall === wallDef.name);
-
-      // Collect all openings
-      const openings: {
-        start: number;
-        end: number;
-        type: 'door' | 'window';
-        heightFromFloor?: number;
-      }[] = [];
-
-      for (const door of doorsOnWall) {
-        const halfWidth = door.width / 2;
-        const centerPos = (door.position - 0.5) * wallDef.width;
-        openings.push({
-          start: centerPos - halfWidth,
-          end: centerPos + halfWidth,
-          type: 'door',
-        });
+      // solid piers between the openings, full height
+      for (const pier of piersBetween(openings, frame.width)) {
+        this.registerWall(
+          group,
+          this.buildRow(wallPath, frame, (pier.start + pier.end) / 2, pier.end - pier.start, floorY, {
+            scaleY: data.size.y / MODULE_HEIGHT,
+          })
+        );
       }
 
-      for (const window of windowsOnWall) {
-        const halfWidth = window.width / 2;
-        const centerPos = (window.position - 0.5) * wallDef.width;
-        openings.push({
-          start: centerPos - halfWidth,
-          end: centerPos + halfWidth,
-          type: 'window',
-          heightFromFloor: window.heightFromFloor,
-        });
-      }
-
-      // Sort openings by start position
-      openings.sort((a, b) => a.start - b.start);
-
-      // Create wall segments
-      let lastEnd = -wallDef.width / 2;
-
+      // above every opening, and below the windows
       for (const opening of openings) {
-        // Segment before opening
-        if (opening.start > lastEnd) {
-          const segWidth = opening.start - lastEnd;
-          const wall = this.createWallSegment(
-            segWidth,
-            data.size.y,
-            wallMaterial,
-            new THREE.Vector3(
-              wallDef.center.x + wallDef.normal.x * 0 + wallDef.normal.z * (lastEnd + segWidth / 2),
-              cy,
-              wallDef.center.z + wallDef.normal.z * 0 + wallDef.normal.x * (lastEnd + segWidth / 2)
-            ),
-            wallDef.rotation
+        const width = opening.end - opening.start;
+        const u = (opening.start + opening.end) / 2;
+        if (opening.top < data.size.y - 0.02) {
+          this.registerWall(
+            group,
+            this.buildRow(wallPath, frame, u, width, floorY + opening.top, {
+              scaleY: (data.size.y - opening.top) / MODULE_HEIGHT,
+            })
           );
-          group.add(wall);
-          this.walls.push(wall);
         }
-
-        // If window, create wall above window
-        if (opening.type === 'window' && opening.heightFromFloor !== undefined) {
-          const aboveHeight =
-            data.size.y -
-            (opening.heightFromFloor +
-              (data.windows.find(
-                w =>
-                  w.wall === wallDef.name &&
-                  Math.abs((w.position - 0.5) * wallDef.width - (opening.start + opening.end) / 2) <
-                    0.01
-              )?.height || 1.0));
-
-          if (aboveHeight > 0.1) {
-            const windowData = data.windows.find(
-              w =>
-                w.wall === wallDef.name &&
-                Math.abs((w.position - 0.5) * wallDef.width - (opening.start + opening.end) / 2) <
-                  0.01
-            );
-            const windowHeight = windowData?.height || 1.0;
-            const windowBottom = opening.heightFromFloor;
-            const windowTop = windowBottom + windowHeight;
-
-            // Wall segment above window
-            const wall = this.createWallSegment(
-              opening.end - opening.start,
-              data.size.y - windowTop,
-              wallMaterial,
-              new THREE.Vector3(
-                wallDef.center.x +
-                  wallDef.normal.x * 0 +
-                  wallDef.normal.z * ((opening.start + opening.end) / 2),
-                cy - halfH + windowTop + (data.size.y - windowTop) / 2,
-                wallDef.center.z +
-                  wallDef.normal.z * 0 +
-                  wallDef.normal.x * ((opening.start + opening.end) / 2)
-              ),
-              wallDef.rotation
-            );
-            group.add(wall);
-            this.walls.push(wall);
-          }
+        if (opening.bottom > 0.02) {
+          this.registerWall(
+            group,
+            this.buildRow(wallPath, frame, u, width, floorY, { scaleY: opening.bottom / MODULE_HEIGHT })
+          );
         }
-
-        lastEnd = opening.end;
-      }
-
-      // Final segment after last opening
-      if (lastEnd < wallDef.width / 2) {
-        const segWidth = wallDef.width / 2 - lastEnd;
-        const wall = this.createWallSegment(
-          segWidth,
-          data.size.y,
-          wallMaterial,
-          new THREE.Vector3(
-            wallDef.center.x + wallDef.normal.x * 0 + wallDef.normal.z * (lastEnd + segWidth / 2),
-            cy,
-            wallDef.center.z + wallDef.normal.z * 0 + wallDef.normal.x * (lastEnd + segWidth / 2)
-          ),
-          wallDef.rotation
-        );
-        group.add(wall);
-        this.walls.push(wall);
-      }
-
-      // If no openings, create full wall
-      if (openings.length === 0) {
-        const wall = this.createWallSegment(
-          wallDef.width,
-          data.size.y,
-          wallMaterial,
-          wallDef.center,
-          wallDef.rotation
-        );
-        group.add(wall);
-        this.walls.push(wall);
       }
     }
   }
 
-  private createWallSegment(
-    width: number,
-    height: number,
-    material: THREE.MeshStandardMaterial,
-    position: THREE.Vector3,
-    rotation: THREE.Euler
-  ): THREE.Mesh {
-    // Use more segments for better shadow quality
-    const geometry = new THREE.PlaneGeometry(
-      width,
-      height,
-      Math.max(10, Math.floor(width * 5)),
-      Math.max(10, Math.floor(height * 5))
-    );
-    const wall = new THREE.Mesh(geometry, material.clone());
-    wall.position.copy(position);
-    wall.rotation.copy(rotation);
-    wall.receiveShadow = true;
-    wall.castShadow = true;
-    return wall;
-  }
-
-  private createBaseboards(
+  private createTrim(
     group: THREE.Group,
     data: RoomData,
     cx: number,
@@ -324,47 +402,32 @@ export class Room {
     halfH: number,
     halfD: number
   ): void {
-    const geo = new THREE.BoxGeometry(data.size.x, 0.12, 0.06);
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.3,
-      metalness: 0.1,
-    });
+    const floorY = cy - halfH;
+    const ceilingY = cy + halfH;
 
-    const baseboardData = [
-      { pos: [cx, cy - halfH + 0.06, cz - halfD + 0.03], rot: [0, 0, 0], scale: [1, 1, 1] },
-      { pos: [cx, cy - halfH + 0.06, cz + halfD - 0.03], rot: [0, Math.PI, 0], scale: [1, 1, 1] },
-      {
-        pos: [cx - halfW + 0.03, cy - halfH + 0.06, cz],
-        rot: [0, -Math.PI / 2, 0],
-        scale: [data.size.z / data.size.x, 1, 1],
-      },
-      {
-        pos: [cx + halfW - 0.03, cy - halfH + 0.06, cz],
-        rot: [0, Math.PI / 2, 0],
-        scale: [data.size.z / data.size.x, 1, 1],
-      },
-    ];
+    for (const frame of wallFrames(data, cx, cz, halfW, halfD)) {
+      const doorSpans = data.doors
+        .filter(door => door.wall === frame.name)
+        .map(door => {
+          const centre = (door.position - 0.5) * frame.width;
+          return { start: centre - door.width / 2 - 0.09, end: centre + door.width / 2 + 0.09 };
+        });
 
-    for (const door of data.doors) {
-      // Skip baseboard where door is
-      const doorCenter =
-        (door.position - 0.5) *
-        (door.wall === 'north' || door.wall === 'south' ? data.size.x : data.size.z);
-      // We'll handle this by not adding baseboard segments that overlap doors
-      // For simplicity, just add all and let Z-fighting be minimal
+      for (const run of runsExcluding(doorSpans, frame.width)) {
+        const u = (run.start + run.end) / 2;
+        const width = run.end - run.start;
+
+        const skirting = this.buildRow(SKIRTING, frame, u, width, floorY, {
+          inset: WALL_HALF_THICKNESS + 0.009,
+        });
+        group.add(skirting);
+        skirting.traverse(child => {
+          if (child instanceof THREE.Mesh) this.baseboards.push(child);
+        });
+
+        group.add(this.buildRow(CROWN, frame, u, width, ceilingY - 0.082, { inset: WALL_HALF_THICKNESS + 0.024 }));
+      }
     }
-
-    baseboardData.forEach(b => {
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(b.pos[0], b.pos[1], b.pos[2]);
-      mesh.rotation.set(b.rot[0], b.rot[1], b.rot[2]);
-      mesh.scale.set(b.scale[0], b.scale[1], b.scale[2]);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.baseboards.push(mesh);
-      group.add(mesh);
-    });
   }
 
   private createDoorFrames(
@@ -377,90 +440,46 @@ export class Room {
     halfH: number,
     halfD: number
   ): void {
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: 0x6b4f31,
-      roughness: 0.5,
-      metalness: 0.1,
-    });
-    const frameDepth = 0.15;
+    const floorY = cy - halfH;
+    const frames = wallFrames(data, cx, cz, halfW, halfD);
 
-    for (const door of data.doors) {
-      const doorFrame = new THREE.Group();
-      const isNS = door.wall === 'north' || door.wall === 'south';
-      const wallWidth = isNS ? data.size.x : data.size.z;
-      const wallCenter = isNS ? cx : cz;
-      const wallPos = isNS ? cz : cx;
-      const wallSign = door.wall === 'south' || door.wall === 'east' ? 1 : -1;
-      const doorCenter = (door.position - 0.5) * wallWidth;
+    for (const door of data.doors as DoorData[]) {
+      const frame = frames.find(f => f.name === door.wall);
+      if (!frame) continue;
 
-      const frameGeo = new THREE.BoxGeometry(door.width, door.height, frameDepth);
-      const topGeo = new THREE.BoxGeometry(door.width + 0.2, 0.15, frameDepth);
+      const u = (door.position - 0.5) * frame.width;
+      const doorGroup = new THREE.Group();
+      doorGroup.position.set(
+        frame.origin.x + frame.axis.x * u,
+        floorY,
+        frame.origin.z + frame.axis.z * u
+      );
+      doorGroup.rotation.y = frame.rotY;
 
-      if (isNS) {
-        // North/South wall door
-        // Left frame
-        const leftGeo = new THREE.BoxGeometry(0.15, door.height, frameDepth);
-        const left = new THREE.Mesh(leftGeo, frameMat);
-        left.position.set(
-          doorCenter - door.width / 2 - 0.075,
-          cy - halfH + door.height / 2,
-          wallSign * (halfD - frameDepth / 2)
-        );
-        doorFrame.add(left);
-
-        // Right frame
-        const right = left.clone();
-        right.position.x = doorCenter + door.width / 2 + 0.075;
-        doorFrame.add(right);
-
-        // Top frame
-        const top = new THREE.Mesh(topGeo, frameMat);
-        top.position.set(
-          doorCenter,
-          cy - halfH + door.height + 0.075,
-          wallSign * (halfD - frameDepth / 2)
-        );
-        doorFrame.add(top);
-
-        // Apply wall rotation
-        if (door.wall === 'north') {
-          doorFrame.rotation.y = Math.PI;
-        }
-        doorFrame.position.set(cx, 0, cz);
-      } else {
-        // East/West wall door
-        const leftGeo = new THREE.BoxGeometry(frameDepth, door.height, 0.15);
-        const left = new THREE.Mesh(leftGeo, frameMat);
-        left.position.set(
-          wallSign * (halfW - frameDepth / 2),
-          cy - halfH + door.height / 2,
-          doorCenter - door.width / 2 - 0.075
-        );
-        doorFrame.add(left);
-
-        const right = left.clone();
-        right.position.z = doorCenter + door.width / 2 + 0.075;
-        doorFrame.add(right);
-
-        const topGeo2 = new THREE.BoxGeometry(frameDepth, 0.15, door.width + 0.2);
-        const top = new THREE.Mesh(topGeo2, frameMat);
-        top.position.set(
-          wallSign * (halfW - frameDepth / 2),
-          cy - halfH + door.height + 0.075,
-          doorCenter
-        );
-        doorFrame.add(top);
-
-        if (door.wall === 'west') {
-          doorFrame.rotation.y = -Math.PI / 2;
-        } else {
-          doorFrame.rotation.y = Math.PI / 2;
-        }
-        doorFrame.position.set(cx, 0, cz);
+      const casing = ModelLibrary.clone(DOOR_FRAME);
+      if (casing) {
+        casing.scale.set(door.width / 0.9, door.height / 1.98, 1);
+        doorGroup.add(casing);
       }
 
-      this.doorFrames.push(doorFrame);
-      group.add(doorFrame);
+      // Leaf hinged on the left reveal, standing open at ~78 degrees so the
+      // gap stays walkable and you can see the panels from inside.
+      const leaf = ModelLibrary.clone(DOOR_LEAF);
+      if (leaf) {
+        leaf.position.set(-door.width / 2 + 0.01, 0.008, 0);
+        leaf.rotation.y = -Math.PI * 0.43;
+        leaf.scale.set(door.width / 0.762, door.height / 1.981, 1);
+
+        const handle = ModelLibrary.clone(DOOR_HANDLE);
+        if (handle) {
+          handle.position.set(0.762 - 0.08, 1.03, 0.035 / 2 + 0.012);
+          leaf.add(handle);
+        }
+        doorGroup.add(leaf);
+      }
+
+      this.doorFrames.push(doorGroup);
+      group.add(doorGroup);
     }
   }
 
@@ -474,121 +493,56 @@ export class Room {
     halfH: number,
     halfD: number
   ): void {
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: 0x6b4f31,
-      roughness: 0.5,
-      metalness: 0.1,
-    });
-    const glassMat = new THREE.MeshPhysicalMaterial({
-      color: 0x88ccee,
-      transmission: 0.8,
-      thickness: 0.02,
-      roughness: 0.05,
-      metalness: 0.0,
-      ior: 1.5,
-      side: THREE.DoubleSide,
-    });
+    const floorY = cy - halfH;
+    const frames = wallFrames(data, cx, cz, halfW, halfD);
 
-    for (const window of data.windows) {
+    for (const window of data.windows as WindowData[]) {
+      const frame = frames.find(f => f.name === window.wall);
+      if (!frame) continue;
+
+      const u = (window.position - 0.5) * frame.width;
       const windowGroup = new THREE.Group();
-      const isNS = window.wall === 'north' || window.wall === 'south';
-      const wallWidth = isNS ? data.size.x : data.size.z;
-      const wallCenter = isNS ? cx : cz;
-      const wallSign = window.wall === 'south' || window.wall === 'east' ? 1 : -1;
-      const windowCenter = (window.position - 0.5) * wallWidth;
+      windowGroup.position.set(
+        frame.origin.x + frame.axis.x * u,
+        floorY + window.heightFromFloor + window.height / 2,
+        frame.origin.z + frame.axis.z * u
+      );
+      windowGroup.rotation.y = frame.rotY;
 
-      const frameGeo = new THREE.BoxGeometry(window.width + 0.1, window.height + 0.1, 0.1);
-      const glassGeo = new THREE.PlaneGeometry(window.width, window.height);
+      const casing = ModelLibrary.clone(WINDOW_FRAME);
+      if (casing) {
+        casing.scale.set(window.width / 1.2, window.height / 1.35, 1);
+        windowGroup.add(casing);
+      }
 
-      if (isNS) {
-        const frame = new THREE.Mesh(frameGeo, frameMat);
-        frame.position.set(
-          windowCenter,
-          cy - halfH + window.heightFromFloor + window.height / 2,
-          wallSign * (halfD - 0.05)
-        );
-        windowGroup.add(frame);
-
-        const glass = new THREE.Mesh(glassGeo, glassMat);
-        glass.position.set(
-          windowCenter,
-          cy - halfH + window.heightFromFloor + window.height / 2,
-          wallSign * (halfD - 0.04)
-        );
+      const glass = ModelLibrary.clone(WINDOW_GLASS);
+      if (glass) {
+        glass.scale.set(window.width / 1.1, window.height / 1.25, 1);
+        glass.traverse(child => {
+          if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+            const material = child.material.clone();
+            material.transparent = true;
+            material.opacity = 0.22;
+            material.metalness = 0.1;
+            material.roughness = 0.06;
+            material.depthWrite = false;
+            child.material = material;
+            child.castShadow = false;
+          }
+        });
         windowGroup.add(glass);
+      }
 
-        if (window.wall === 'north') {
-          windowGroup.rotation.y = Math.PI;
-        }
-        windowGroup.position.set(cx, 0, cz);
-      } else {
-        const frame = new THREE.Mesh(frameGeo, frameMat);
-        frame.position.set(
-          wallSign * (halfW - 0.05),
-          cy - halfH + window.heightFromFloor + window.height / 2,
-          windowCenter
-        );
-        windowGroup.add(frame);
-
-        const glass = new THREE.Mesh(glassGeo, glassMat);
-        glass.position.set(
-          wallSign * (halfW - 0.04),
-          cy - halfH + window.heightFromFloor + window.height / 2,
-          windowCenter
-        );
-        windowGroup.add(glass);
-
-        if (window.wall === 'west') {
-          windowGroup.rotation.y = -Math.PI / 2;
-        } else {
-          windowGroup.rotation.y = Math.PI / 2;
-        }
-        windowGroup.position.set(cx, 0, cz);
+      const sill = ModelLibrary.clone(WINDOW_SILL);
+      if (sill) {
+        sill.scale.set(window.width / 1.1, 1, 1);
+        sill.position.set(0, -window.height / 2 - 0.02, WALL_HALF_THICKNESS - 0.02);
+        windowGroup.add(sill);
       }
 
       this.windowFrames.push(windowGroup);
       group.add(windowGroup);
     }
-  }
-
-  private createCrownMolding(
-    group: THREE.Group,
-    data: RoomData,
-    cx: number,
-    cy: number,
-    cz: number,
-    halfW: number,
-    halfH: number,
-    halfD: number
-  ): void {
-    // Simple crown molding at ceiling-wall junction
-    const geo = new THREE.BoxGeometry(data.size.x, 0.08, 0.08);
-    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.1 });
-
-    const moldings = [
-      { pos: [cx, cy + halfH - 0.04, cz - halfD + 0.04], rot: [0, 0, 0], scale: [1, 1, 1] },
-      { pos: [cx, cy + halfH - 0.04, cz + halfD - 0.04], rot: [0, Math.PI, 0], scale: [1, 1, 1] },
-      {
-        pos: [cx - halfW + 0.04, cy + halfH - 0.04, cz],
-        rot: [0, -Math.PI / 2, 0],
-        scale: [data.size.z / data.size.x, 1, 1],
-      },
-      {
-        pos: [cx + halfW - 0.04, cy + halfH - 0.04, cz],
-        rot: [0, Math.PI / 2, 0],
-        scale: [data.size.z / data.size.x, 1, 1],
-      },
-    ];
-
-    moldings.forEach(m => {
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(m.pos[0], m.pos[1], m.pos[2]);
-      mesh.rotation.set(m.rot[0], m.rot[1], m.rot[2]);
-      mesh.scale.set(m.scale[0], m.scale[1], m.scale[2]);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      group.add(mesh);
-    });
   }
 
   update(delta: number): void {

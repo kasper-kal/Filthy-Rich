@@ -109,7 +109,7 @@ assets, starting the next phase, or committing with a check failing.
 
 | Phase | Finished | Commit | Note |
 |---|---|---|---|
-| — | — | — | nothing built yet |
+| 1 House shell | 23 Nov 2026 | this commit | 16 assets, 7,756 tris; walls/doors/windows/trim wired into `Room.ts` |
 
 ---
 
@@ -130,8 +130,11 @@ From `src/systems/HouseLayout.ts` — eight rooms, all on one floor:
 | `study` | desk, chair, bookshelves |
 | `bedroom2` | small bedroom |
 
-Every room is currently four zero-thickness planes, a floor plane, a ceiling
-plane, and trim drawn as thin boxes. Doorways are gaps cut into the wall planes.
+Every room is four 0.13 m wall runs tiled from 1 m Blender modules, a floor of
+1 m modules (planks or tile), a panelled ceiling, skirting and crown runs, and
+real door and window assemblies. Doorways are gaps between wall piers, capped by
+a header above and a sill panel below windows. The old zero-thickness planes are
+gone; `Room.ts` no longer creates a `PlaneGeometry` wall at all.
 
 ### 1.2 Furniture that is already modelled `[x]`
 
@@ -523,9 +526,45 @@ code between scripts — extend `lib.py`.
 
 ---
 
-## §5. Phase 1 — the house shell `[ ]` (biggest visual win)
+## §5. Phase 1 — the house shell `[x]` (biggest visual win)
 
-**Status:** `[ ]` not started · **Depends on:** nothing · **Done when:** every room is built from wall modules with thickness, doors and windows are real objects, and no flat wall plane is left in the scene graph.
+**Status:** `[x]` shipped 23 Nov 2026 · **Depends on:** nothing · **Done when:** every room is built from wall modules with thickness, doors and windows are real objects, and no flat wall plane is left in the scene graph.
+
+### 5.0 What shipped
+
+Sixteen assets, **7,756 tris, 341 KB** for the whole kit, every one AO-baked into
+vertex colours and pruned. Built by `tools/blender/build_architecture.py` on top
+of `tools/blender/lib.py`, validated by `tools/validate-models.mjs --group
+architecture` (clean: no overruns, no unknown materials, AO present).
+
+| built | used for |
+|---|---|
+| `wall_1m`, `wall_1m_cream`, `wall_1m_wet` | 1.00 × 0.13 × 3.00 modules; wet variant carries a tiled band to 1.2 m |
+| `floor_planks`, `floor_tile`, `floor_tile_small`, `floor_vinyl` | 1 m floor tiles; planks for dry rooms, 0.5 m tile for kitchen, 0.25 m for the bathroom |
+| `ceiling_plain` | 1 m ceiling panels with a joint line |
+| `skirting_modern`, `crown_plain` | trim runs, 0.116 m and 0.082 m tall |
+| `door_frame_std`, `door_leaf_panel`, `door_handle_lever` | 0.90 m opening, 1.98 m leaf, panelled, brass lever |
+| `window_frame_std`, `window_glass`, `window_sill` | 1.20 × 1.35 frame, mullion + transom, oak sill |
+
+Deferred deliberately (see §21): stairs, blinds, curtains, dado/wainscot, the
+damaged and corner variants. They are additive — §5.2–§5.9 still hold.
+
+**How it is wired.** `src/world/ModelLibrary.ts` caches each GLB once and clones
+it; `src/systems/Room.ts` places modules, then merges every placement of an asset
+into one geometry **per material** (`mergeGeometries`), so a room is a couple of
+dozen draw calls instead of hundreds. Openings are cut by splitting each wall into
+full-height piers plus a header over every opening and a sill panel under every
+window — previously doorways and windows were holes with nothing above them.
+
+**Two bugs this phase found, both fixed:**
+
+1. The Blender exporter was writing the object transform into the node instead of
+   the mesh, so every asset arrived offset and half-size when the game cloned it.
+   `lib.export_glb` now applies the transform before export, and the loader also
+   modulates by the node matrix.
+2. `lib.box` scaled a 1 m cube by `size / 2`, halving every dimension. Every
+   architecture asset was rebuilt after the fix; check `wall_1m` bounds are
+   `x ±0.5, y 0…3, z ±0.065` before trusting a new group.
 
 The house is the thing the player stares at for hours, and right now the walls
 have no thickness, the trim is a thin box, and doorways are holes. This phase

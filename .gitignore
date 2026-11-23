@@ -37,3 +37,6 @@ deploy/
 
 # Local visual-audit screenshots
 audit/
+
+# Blender bytecode
+tools/blender/__pycache__/
