@@ -113,7 +113,7 @@ assets, starting the next phase, or committing with a check failing.
 | 2 Fixtures | 23 Nov 2026 | `c367cdc` | 29 assets, 28,572 tris; kitchen/bath/laundry placed; env map added |
 | 3 Decor | 23 Nov 2026 | `79704a2` | 79 assets, 39,620 tris; 110 props across all eight rooms; facing bug found and fixed |
 | 4 Trash | 23 Nov 2026 | `9cedf55` | 46 assets, 7,998 tris; 31 spawn types modelled, box factory deleted; bob and spin removed |
-| 5 Cleaning kit | 23 Nov 2026 | this commit | 21 assets, 9,636 tris; four tools + glove wired into the HUD, primitive builders deleted; prune skipped because it eats the sockets |
+| 5 Cleaning kit | 23 Nov 2026 | `c898c21` | 21 assets, 9,636 tris; four tools + glove wired into the HUD, primitive builders deleted; prune skipped because it eats the sockets |
 
 ---
 
