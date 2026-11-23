@@ -4,10 +4,10 @@
       "path": "architecture/ceiling_plain.glb",
       "group": "architecture",
       "tris": 216,
-      "bytes": 12284,
+      "bytes": 12040,
       "bounds": [
         1.003,
-        1.0,
+        1,
         0.022
       ]
     },
@@ -15,9 +15,9 @@
       "path": "architecture/crown_plain.glb",
       "group": "architecture",
       "tris": 216,
-      "bytes": 10720,
+      "bytes": 10620,
       "bounds": [
-        1.0,
+        1,
         0.046,
         0.06
       ]
@@ -26,7 +26,7 @@
       "path": "architecture/door_frame_std.glb",
       "group": "architecture",
       "tris": 1188,
-      "bytes": 66876,
+      "bytes": 66768,
       "bounds": [
         1.04,
         0.162,
@@ -37,7 +37,7 @@
       "path": "architecture/door_handle_lever.glb",
       "group": "architecture",
       "tris": 412,
-      "bytes": 22316,
+      "bytes": 22216,
       "bounds": [
         0.136,
         0.051,
@@ -48,7 +48,7 @@
       "path": "architecture/door_leaf_panel.glb",
       "group": "architecture",
       "tris": 324,
-      "bytes": 17064,
+      "bytes": 16964,
       "bounds": [
         0.762,
         0.041,
@@ -59,10 +59,10 @@
       "path": "architecture/floor_planks.glb",
       "group": "architecture",
       "tris": 540,
-      "bytes": 32220,
+      "bytes": 31808,
       "bounds": [
         0.98,
-        1.0,
+        1,
         0.03
       ]
     },
@@ -70,10 +70,10 @@
       "path": "architecture/floor_tile.glb",
       "group": "architecture",
       "tris": 540,
-      "bytes": 31484,
+      "bytes": 31232,
       "bounds": [
-        1.0,
-        1.0,
+        1,
+        1,
         0.02
       ]
     },
@@ -81,10 +81,10 @@
       "path": "architecture/floor_tile_small.glb",
       "group": "architecture",
       "tris": 1836,
-      "bytes": 103316,
+      "bytes": 103064,
       "bounds": [
-        1.0,
-        1.0,
+        1,
+        1,
         0.02
       ]
     },
@@ -92,10 +92,10 @@
       "path": "architecture/floor_vinyl.glb",
       "group": "architecture",
       "tris": 216,
-      "bytes": 12992,
+      "bytes": 12744,
       "bounds": [
-        1.0,
-        1.0,
+        1,
+        1,
         0.012
       ]
     },
@@ -103,9 +103,9 @@
       "path": "architecture/skirting_modern.glb",
       "group": "architecture",
       "tris": 216,
-      "bytes": 11844,
+      "bytes": 11744,
       "bounds": [
-        1.0,
+        1,
         0.024,
         0.116
       ]
@@ -114,40 +114,40 @@
       "path": "architecture/wall_1m.glb",
       "group": "architecture",
       "tris": 108,
-      "bytes": 5800,
+      "bytes": 5704,
       "bounds": [
-        1.0,
+        1,
         0.13,
-        3.0
+        3
       ]
     },
     {
       "path": "architecture/wall_1m_cream.glb",
       "group": "architecture",
       "tris": 108,
-      "bytes": 5820,
+      "bytes": 5724,
       "bounds": [
-        1.0,
+        1,
         0.13,
-        3.0
+        3
       ]
     },
     {
       "path": "architecture/wall_1m_wet.glb",
       "group": "architecture",
       "tris": 756,
-      "bytes": 44360,
+      "bytes": 43956,
       "bounds": [
-        1.0,
+        1,
         0.146,
-        3.0
+        3
       ]
     },
     {
       "path": "architecture/window_frame_std.glb",
       "group": "architecture",
       "tris": 756,
-      "bytes": 42236,
+      "bytes": 41984,
       "bounds": [
         1.2,
         0.131,
@@ -158,7 +158,7 @@
       "path": "architecture/window_glass.glb",
       "group": "architecture",
       "tris": 108,
-      "bytes": 6024,
+      "bytes": 5924,
       "bounds": [
         1.1,
         0.006,
@@ -169,7 +169,7 @@
       "path": "architecture/window_sill.glb",
       "group": "architecture",
       "tris": 216,
-      "bytes": 12776,
+      "bytes": 12528,
       "bounds": [
         1.3,
         0.22,
@@ -177,10 +177,879 @@
       ]
     },
     {
+      "path": "decor/alarm_clock.glb",
+      "group": "decor",
+      "tris": 248,
+      "bytes": 16052,
+      "bounds": [
+        0.14,
+        0.083,
+        0.073
+      ]
+    },
+    {
+      "path": "decor/ashtray.glb",
+      "group": "decor",
+      "tris": 480,
+      "bytes": 25000,
+      "bounds": [
+        0.118,
+        0.116,
+        0.042
+      ]
+    },
+    {
+      "path": "decor/bath_toy.glb",
+      "group": "decor",
+      "tris": 680,
+      "bytes": 35412,
+      "bounds": [
+        0.159,
+        0.09,
+        0.116
+      ]
+    },
+    {
+      "path": "decor/bedside_books.glb",
+      "group": "decor",
+      "tris": 36,
+      "bytes": 6268,
+      "bounds": [
+        0.181,
+        0.145,
+        0.075
+      ]
+    },
+    {
+      "path": "decor/book_stack.glb",
+      "group": "decor",
+      "tris": 72,
+      "bytes": 11540,
+      "bounds": [
+        0.279,
+        0.215,
+        0.144
+      ]
+    },
+    {
+      "path": "decor/bowl_cereal.glb",
+      "group": "decor",
+      "tris": 440,
+      "bytes": 17568,
+      "bounds": [
+        0.16,
+        0.16,
+        0.068
+      ]
+    },
+    {
+      "path": "decor/bowl_fruit.glb",
+      "group": "decor",
+      "tris": 1140,
+      "bytes": 56112,
+      "bounds": [
+        0.278,
+        0.278,
+        0.138
+      ]
+    },
+    {
+      "path": "decor/candle_jar.glb",
+      "group": "decor",
+      "tris": 664,
+      "bytes": 27536,
+      "bounds": [
+        0.096,
+        0.095,
+        0.116
+      ]
+    },
+    {
+      "path": "decor/cereal_box.glb",
+      "group": "decor",
+      "tris": 132,
+      "bytes": 9544,
+      "bounds": [
+        0.2,
+        0.076,
+        0.3
+      ]
+    },
+    {
+      "path": "decor/charger_cable.glb",
+      "group": "decor",
+      "tris": 252,
+      "bytes": 20880,
+      "bounds": [
+        0.788,
+        0.106,
+        0.03
+      ]
+    },
+    {
+      "path": "decor/chopping_board.glb",
+      "group": "decor",
+      "tris": 144,
+      "bytes": 10704,
+      "bounds": [
+        0.4,
+        0.28,
+        0.033
+      ]
+    },
+    {
+      "path": "decor/clock_wall.glb",
+      "group": "decor",
+      "tris": 708,
+      "bytes": 42816,
+      "bounds": [
+        0.3,
+        0.071,
+        0.3
+      ]
+    },
+    {
+      "path": "decor/clothes_rail.glb",
+      "group": "decor",
+      "tris": 972,
+      "bytes": 65920,
+      "bounds": [
+        1.02,
+        0.34,
+        1.42
+      ]
+    },
+    {
+      "path": "decor/coat_hanger.glb",
+      "group": "decor",
+      "tris": 264,
+      "bytes": 17716,
+      "bounds": [
+        0.415,
+        0.02,
+        0.152
+      ]
+    },
+    {
+      "path": "decor/coat_hooks.glb",
+      "group": "decor",
+      "tris": 1048,
+      "bytes": 51380,
+      "bounds": [
+        0.6,
+        0.096,
+        0.1
+      ]
+    },
+    {
+      "path": "decor/coat_jacket.glb",
+      "group": "decor",
+      "tris": 1020,
+      "bytes": 54320,
+      "bounds": [
+        0.648,
+        0.154,
+        0.859
+      ]
+    },
+    {
+      "path": "decor/conditioner_bottle.glb",
+      "group": "decor",
+      "tris": 500,
+      "bytes": 23956,
+      "bounds": [
+        0.084,
+        0.083,
+        0.232
+      ]
+    },
+    {
+      "path": "decor/cork_board.glb",
+      "group": "decor",
+      "tris": 252,
+      "bytes": 25724,
+      "bounds": [
+        0.62,
+        0.031,
+        0.47
+      ]
+    },
+    {
+      "path": "decor/cushion_round.glb",
+      "group": "decor",
+      "tris": 628,
+      "bytes": 31128,
+      "bounds": [
+        0.404,
+        0.404,
+        0.126
+      ]
+    },
+    {
+      "path": "decor/cushion_square.glb",
+      "group": "decor",
+      "tris": 260,
+      "bytes": 11212,
+      "bounds": [
+        0.44,
+        0.12,
+        0.44
+      ]
+    },
+    {
+      "path": "decor/cutlery_set.glb",
+      "group": "decor",
+      "tris": 208,
+      "bytes": 16496,
+      "bounds": [
+        0.235,
+        0.103,
+        0.022
+      ]
+    },
+    {
+      "path": "decor/desk_lamp.glb",
+      "group": "decor",
+      "tris": 868,
+      "bytes": 51204,
+      "bounds": [
+        0.138,
+        0.236,
+        0.511
+      ]
+    },
+    {
+      "path": "decor/doormat.glb",
+      "group": "decor",
+      "tris": 216,
+      "bytes": 15756,
+      "bounds": [
+        0.75,
+        0.45,
+        0.024
+      ]
+    },
+    {
+      "path": "decor/drying_rack_clothes.glb",
+      "group": "decor",
+      "tris": 1112,
+      "bytes": 65968,
+      "bounds": [
+        0.92,
+        0.06,
+        0.9
+      ]
+    },
+    {
+      "path": "decor/duvet_folded.glb",
+      "group": "decor",
+      "tris": 600,
+      "bytes": 27672,
+      "bounds": [
+        1.558,
+        0.37,
+        0.229
+      ]
+    },
+    {
+      "path": "decor/floor_fan.glb",
+      "group": "decor",
+      "tris": 1172,
+      "bytes": 76612,
+      "bounds": [
+        0.32,
+        0.32,
+        0.47
+      ]
+    },
+    {
+      "path": "decor/fruit_bowl.glb",
+      "group": "decor",
+      "tris": 860,
+      "bytes": 44768,
+      "bounds": [
+        0.297,
+        0.297,
+        0.181
+      ]
+    },
+    {
+      "path": "decor/frying_pan.glb",
+      "group": "decor",
+      "tris": 848,
+      "bytes": 46620,
+      "bounds": [
+        0.409,
+        0.26,
+        0.054
+      ]
+    },
+    {
+      "path": "decor/game_case_stack.glb",
+      "group": "decor",
+      "tris": 96,
+      "bytes": 10136,
+      "bounds": [
+        0.156,
+        0.026,
+        0.337
+      ]
+    },
+    {
+      "path": "decor/games_console.glb",
+      "group": "decor",
+      "tris": 216,
+      "bytes": 16136,
+      "bounds": [
+        0.36,
+        0.35,
+        0.08
+      ]
+    },
+    {
+      "path": "decor/glass_tumbler.glb",
+      "group": "decor",
+      "tris": 288,
+      "bytes": 8980,
+      "bounds": [
+        0.07,
+        0.069,
+        0.108
+      ]
+    },
+    {
+      "path": "decor/glasses_specs.glb",
+      "group": "decor",
+      "tris": 340,
+      "bytes": 27040,
+      "bounds": [
+        0.107,
+        0.073,
+        0.048
+      ]
+    },
+    {
+      "path": "decor/keyboard.glb",
+      "group": "decor",
+      "tris": 192,
+      "bytes": 14872,
+      "bounds": [
+        0.44,
+        0.14,
+        0.027
+      ]
+    },
+    {
+      "path": "decor/keys_tray.glb",
+      "group": "decor",
+      "tris": 456,
+      "bytes": 32888,
+      "bounds": [
+        0.205,
+        0.15,
+        0.022
+      ]
+    },
+    {
+      "path": "decor/knife_block.glb",
+      "group": "decor",
+      "tris": 504,
+      "bytes": 33788,
+      "bounds": [
+        0.12,
+        0.2,
+        0.351
+      ]
+    },
+    {
+      "path": "decor/laptop.glb",
+      "group": "decor",
+      "tris": 312,
+      "bytes": 25512,
+      "bounds": [
+        0.34,
+        0.268,
+        0.307
+      ]
+    },
+    {
+      "path": "decor/laundry_pile.glb",
+      "group": "decor",
+      "tris": 756,
+      "bytes": 43380,
+      "bounds": [
+        0.471,
+        0.428,
+        0.19
+      ]
+    },
+    {
+      "path": "decor/magazine_pile.glb",
+      "group": "decor",
+      "tris": 60,
+      "bytes": 7380,
+      "bounds": [
+        0.33,
+        0.255,
+        0.064
+      ]
+    },
+    {
+      "path": "decor/mail_pile.glb",
+      "group": "decor",
+      "tris": 72,
+      "bytes": 8116,
+      "bounds": [
+        0.226,
+        0.157,
+        0.041
+      ]
+    },
+    {
+      "path": "decor/monitor.glb",
+      "group": "decor",
+      "tris": 252,
+      "bytes": 16504,
+      "bounds": [
+        0.55,
+        0.16,
+        0.47
+      ]
+    },
+    {
+      "path": "decor/mouse.glb",
+      "group": "decor",
+      "tris": 296,
+      "bytes": 14876,
+      "bounds": [
+        0.11,
+        0.192,
+        0.065
+      ]
+    },
+    {
+      "path": "decor/mug.glb",
+      "group": "decor",
+      "tris": 456,
+      "bytes": 20856,
+      "bounds": [
+        0.131,
+        0.089,
+        0.1
+      ]
+    },
+    {
+      "path": "decor/notebook_open.glb",
+      "group": "decor",
+      "tris": 120,
+      "bytes": 14272,
+      "bounds": [
+        0.21,
+        0.3,
+        0.014
+      ]
+    },
+    {
+      "path": "decor/paper_stack.glb",
+      "group": "decor",
+      "tris": 156,
+      "bytes": 15644,
+      "bounds": [
+        0.225,
+        0.302,
+        0.062
+      ]
+    },
+    {
+      "path": "decor/pen_cup.glb",
+      "group": "decor",
+      "tris": 528,
+      "bytes": 31864,
+      "bounds": [
+        0.083,
+        0.082,
+        0.225
+      ]
+    },
+    {
+      "path": "decor/phone_mobile.glb",
+      "group": "decor",
+      "tris": 352,
+      "bytes": 23380,
+      "bounds": [
+        0.072,
+        0.148,
+        0.011
+      ]
+    },
+    {
+      "path": "decor/picture_frame_a4.glb",
+      "group": "decor",
+      "tris": 72,
+      "bytes": 9204,
+      "bounds": [
+        0.32,
+        0.022,
+        0.42
+      ]
+    },
+    {
+      "path": "decor/picture_frame_wide.glb",
+      "group": "decor",
+      "tris": 84,
+      "bytes": 10996,
+      "bounds": [
+        0.7,
+        0.024,
+        0.45
+      ]
+    },
+    {
+      "path": "decor/pillow.glb",
+      "group": "decor",
+      "tris": 416,
+      "bytes": 20436,
+      "bounds": [
+        0.64,
+        0.152,
+        0.39
+      ]
+    },
+    {
+      "path": "decor/placemat.glb",
+      "group": "decor",
+      "tris": 36,
+      "bytes": 5296,
+      "bounds": [
+        0.42,
+        0.306,
+        0.005
+      ]
+    },
+    {
+      "path": "decor/plate_dinner.glb",
+      "group": "decor",
+      "tris": 240,
+      "bytes": 15896,
+      "bounds": [
+        0.26,
+        0.26,
+        0.034
+      ]
+    },
+    {
+      "path": "decor/plate_stack.glb",
+      "group": "decor",
+      "tris": 1200,
+      "bytes": 61936,
+      "bounds": [
+        0.26,
+        0.26,
+        0.098
+      ]
+    },
+    {
+      "path": "decor/remote_control.glb",
+      "group": "decor",
+      "tris": 344,
+      "bytes": 22996,
+      "bounds": [
+        0.2,
+        0.054,
+        0.023
+      ]
+    },
+    {
+      "path": "decor/saucepan.glb",
+      "group": "decor",
+      "tris": 1040,
+      "bytes": 58452,
+      "bounds": [
+        0.4,
+        0.21,
+        0.122
+      ]
+    },
+    {
+      "path": "decor/scale_bathroom.glb",
+      "group": "decor",
+      "tris": 432,
+      "bytes": 23908,
+      "bounds": [
+        0.3,
+        0.3,
+        0.054
+      ]
+    },
+    {
+      "path": "decor/shampoo_bottle.glb",
+      "group": "decor",
+      "tris": 500,
+      "bytes": 24824,
+      "bounds": [
+        0.072,
+        0.072,
+        0.211
+      ]
+    },
+    {
+      "path": "decor/shelf_bracket.glb",
+      "group": "decor",
+      "tris": 476,
+      "bytes": 25972,
+      "bounds": [
+        0.02,
+        0.173,
+        0.2
+      ]
+    },
+    {
+      "path": "decor/shoe_pair.glb",
+      "group": "decor",
+      "tris": 936,
+      "bytes": 53968,
+      "bounds": [
+        0.224,
+        0.26,
+        0.08
+      ]
+    },
+    {
+      "path": "decor/shoe_rack.glb",
+      "group": "decor",
+      "tris": 972,
+      "bytes": 61476,
+      "bounds": [
+        0.835,
+        0.302,
+        0.39
+      ]
+    },
+    {
+      "path": "decor/shopping_bag.glb",
+      "group": "decor",
+      "tris": 676,
+      "bytes": 42068,
+      "bounds": [
+        0.28,
+        0.18,
+        0.456
+      ]
+    },
+    {
+      "path": "decor/soap_bar.glb",
+      "group": "decor",
+      "tris": 212,
+      "bytes": 14424,
+      "bounds": [
+        0.11,
+        0.07,
+        0.032
+      ]
+    },
+    {
+      "path": "decor/soundbar.glb",
+      "group": "decor",
+      "tris": 144,
+      "bytes": 9944,
+      "bounds": [
+        0.9,
+        0.095,
+        0.077
+      ]
+    },
+    {
+      "path": "decor/spice_rack.glb",
+      "group": "decor",
+      "tris": 732,
+      "bytes": 52436,
+      "bounds": [
+        0.402,
+        0.071,
+        0.3
+      ]
+    },
+    {
+      "path": "decor/suitcase.glb",
+      "group": "decor",
+      "tris": 872,
+      "bytes": 51760,
+      "bounds": [
+        0.52,
+        0.248,
+        0.453
+      ]
+    },
+    {
+      "path": "decor/table_runner.glb",
+      "group": "decor",
+      "tris": 36,
+      "bytes": 4348,
+      "bounds": [
+        2,
+        0.35,
+        0.006
+      ]
+    },
+    {
+      "path": "decor/teapot.glb",
+      "group": "decor",
+      "tris": 888,
+      "bytes": 43332,
+      "bounds": [
+        0.24,
+        0.15,
+        0.165
+      ]
+    },
+    {
+      "path": "decor/teddy_bear.glb",
+      "group": "decor",
+      "tris": 1020,
+      "bytes": 65152,
+      "bounds": [
+        0.222,
+        0.144,
+        0.315
+      ]
+    },
+    {
+      "path": "decor/throw_blanket.glb",
+      "group": "decor",
+      "tris": 452,
+      "bytes": 25284,
+      "bounds": [
+        1.201,
+        1.675,
+        0.02
+      ]
+    },
+    {
+      "path": "decor/towel_folded.glb",
+      "group": "decor",
+      "tris": 588,
+      "bytes": 28708,
+      "bounds": [
+        0.38,
+        0.292,
+        0.235
+      ]
+    },
+    {
+      "path": "decor/towel_hanging.glb",
+      "group": "decor",
+      "tris": 556,
+      "bytes": 27348,
+      "bounds": [
+        0.44,
+        0.11,
+        0.69
+      ]
+    },
+    {
+      "path": "decor/toy_block_set.glb",
+      "group": "decor",
+      "tris": 972,
+      "bytes": 63200,
+      "bounds": [
+        0.272,
+        0.286,
+        0.175
+      ]
+    },
+    {
+      "path": "decor/trash_bin_office.glb",
+      "group": "decor",
+      "tris": 640,
+      "bytes": 30060,
+      "bounds": [
+        0.262,
+        0.284,
+        0.355
+      ]
+    },
+    {
+      "path": "decor/tv_crt.glb",
+      "group": "decor",
+      "tris": 636,
+      "bytes": 35728,
+      "bounds": [
+        0.55,
+        0.52,
+        0.451
+      ]
+    },
+    {
+      "path": "decor/tv_flat.glb",
+      "group": "decor",
+      "tris": 360,
+      "bytes": 22060,
+      "bounds": [
+        1.1,
+        0.2,
+        0.815
+      ]
+    },
+    {
+      "path": "decor/umbrella_stand.glb",
+      "group": "decor",
+      "tris": 1132,
+      "bytes": 67484,
+      "bounds": [
+        0.261,
+        0.26,
+        0.96
+      ]
+    },
+    {
+      "path": "decor/vase_tall.glb",
+      "group": "decor",
+      "tris": 544,
+      "bytes": 25876,
+      "bounds": [
+        0.14,
+        0.14,
+        0.62
+      ]
+    },
+    {
+      "path": "decor/wall_shelf.glb",
+      "group": "decor",
+      "tris": 24,
+      "bytes": 3332,
+      "bounds": [
+        0.8,
+        0.301,
+        0.042
+      ]
+    },
+    {
+      "path": "decor/wine_bottle.glb",
+      "group": "decor",
+      "tris": 524,
+      "bytes": 22652,
+      "bounds": [
+        0.08,
+        0.084,
+        0.287
+      ]
+    },
+    {
+      "path": "decor/wine_glass.glb",
+      "group": "decor",
+      "tris": 588,
+      "bytes": 28224,
+      "bounds": [
+        0.072,
+        0.071,
+        0.2
+      ]
+    },
+    {
       "path": "fixtures/bath_mat.glb",
       "group": "fixtures",
       "tris": 216,
-      "bytes": 11076,
+      "bytes": 10976,
       "bounds": [
         0.7,
         0.45,
@@ -191,7 +1060,7 @@
       "path": "fixtures/bath_panel.glb",
       "group": "fixtures",
       "tris": 324,
-      "bytes": 16936,
+      "bytes": 16836,
       "bounds": [
         1.7,
         0.045,
@@ -202,7 +1071,7 @@
       "path": "fixtures/bath_standard.glb",
       "group": "fixtures",
       "tris": 1212,
-      "bytes": 63752,
+      "bytes": 63496,
       "bounds": [
         1.7,
         0.75,
@@ -213,7 +1082,7 @@
       "path": "fixtures/boiler.glb",
       "group": "fixtures",
       "tris": 956,
-      "bytes": 51432,
+      "bytes": 51176,
       "bounds": [
         0.5,
         0.347,
@@ -224,7 +1093,7 @@
       "path": "fixtures/dishwasher.glb",
       "group": "fixtures",
       "tris": 960,
-      "bytes": 54036,
+      "bytes": 53776,
       "bounds": [
         0.6,
         0.673,
@@ -235,7 +1104,7 @@
       "path": "fixtures/fridge_freezer.glb",
       "group": "fixtures",
       "tris": 972,
-      "bytes": 54312,
+      "bytes": 53900,
       "bounds": [
         0.7,
         0.78,
@@ -246,7 +1115,7 @@
       "path": "fixtures/hob_4burner.glb",
       "group": "fixtures",
       "tris": 2284,
-      "bytes": 128428,
+      "bytes": 128012,
       "bounds": [
         0.6,
         0.52,
@@ -257,7 +1126,7 @@
       "path": "fixtures/kettle.glb",
       "group": "fixtures",
       "tris": 1020,
-      "bytes": 57164,
+      "bytes": 56752,
       "bounds": [
         0.215,
         0.18,
@@ -268,7 +1137,7 @@
       "path": "fixtures/kitchen_bin.glb",
       "group": "fixtures",
       "tris": 1056,
-      "bytes": 54800,
+      "bytes": 54544,
       "bounds": [
         0.304,
         0.332,
@@ -279,7 +1148,7 @@
       "path": "fixtures/kitchen_corner.glb",
       "group": "fixtures",
       "tris": 648,
-      "bytes": 38088,
+      "bytes": 37604,
       "bounds": [
         0.62,
         0.636,
@@ -290,9 +1159,9 @@
       "path": "fixtures/kitchen_run_1m.glb",
       "group": "fixtures",
       "tris": 972,
-      "bytes": 58336,
+      "bytes": 55772,
       "bounds": [
-        1.0,
+        1,
         0.636,
         0.9
       ]
@@ -301,9 +1170,9 @@
       "path": "fixtures/kitchen_run_2m.glb",
       "group": "fixtures",
       "tris": 1836,
-      "bytes": 104440,
+      "bytes": 100836,
       "bounds": [
-        2.0,
+        2,
         0.636,
         0.9
       ]
@@ -312,7 +1181,7 @@
       "path": "fixtures/kitchen_sink.glb",
       "group": "fixtures",
       "tris": 1620,
-      "bytes": 91900,
+      "bytes": 88776,
       "bounds": [
         0.8,
         0.646,
@@ -323,7 +1192,7 @@
       "path": "fixtures/kitchen_upper.glb",
       "group": "fixtures",
       "tris": 864,
-      "bytes": 49600,
+      "bytes": 46984,
       "bounds": [
         0.99,
         0.379,
@@ -334,7 +1203,7 @@
       "path": "fixtures/microwave.glb",
       "group": "fixtures",
       "tris": 920,
-      "bytes": 52768,
+      "bytes": 52356,
       "bounds": [
         0.5,
         0.397,
@@ -345,7 +1214,7 @@
       "path": "fixtures/mirror_cabinet.glb",
       "group": "fixtures",
       "tris": 432,
-      "bytes": 23948,
+      "bytes": 23696,
       "bounds": [
         0.6,
         0.176,
@@ -356,7 +1225,7 @@
       "path": "fixtures/oven_builtin.glb",
       "group": "fixtures",
       "tris": 1100,
-      "bytes": 66636,
+      "bytes": 66376,
       "bounds": [
         0.6,
         0.623,
@@ -367,7 +1236,7 @@
       "path": "fixtures/radiator_panel.glb",
       "group": "fixtures",
       "tris": 1700,
-      "bytes": 100528,
+      "bytes": 100112,
       "bounds": [
         0.822,
         0.14,
@@ -378,7 +1247,7 @@
       "path": "fixtures/range_hood.glb",
       "group": "fixtures",
       "tris": 760,
-      "bytes": 37156,
+      "bytes": 36904,
       "bounds": [
         0.9,
         0.5,
@@ -389,7 +1258,7 @@
       "path": "fixtures/shower_enclosure.glb",
       "group": "fixtures",
       "tris": 972,
-      "bytes": 52108,
+      "bytes": 51852,
       "bounds": [
         0.92,
         0.93,
@@ -400,7 +1269,7 @@
       "path": "fixtures/shower_riser.glb",
       "group": "fixtures",
       "tris": 984,
-      "bytes": 53884,
+      "bytes": 53780,
       "bounds": [
         0.23,
         0.22,
@@ -411,7 +1280,7 @@
       "path": "fixtures/shower_tray.glb",
       "group": "fixtures",
       "tris": 964,
-      "bytes": 56560,
+      "bytes": 56000,
       "bounds": [
         0.9,
         0.9,
@@ -422,9 +1291,9 @@
       "path": "fixtures/splashback.glb",
       "group": "fixtures",
       "tris": 540,
-      "bytes": 28692,
+      "bytes": 28440,
       "bounds": [
-        1.0,
+        1,
         0.016,
         0.6
       ]
@@ -433,7 +1302,7 @@
       "path": "fixtures/toaster.glb",
       "group": "fixtures",
       "tris": 540,
-      "bytes": 28920,
+      "bytes": 28672,
       "bounds": [
         0.295,
         0.17,
@@ -444,7 +1313,7 @@
       "path": "fixtures/toilet_close_coupled.glb",
       "group": "fixtures",
       "tris": 1060,
-      "bytes": 58504,
+      "bytes": 58088,
       "bounds": [
         0.38,
         0.56,
@@ -455,7 +1324,7 @@
       "path": "fixtures/toilet_roll_holder.glb",
       "group": "fixtures",
       "tris": 484,
-      "bytes": 27380,
+      "bytes": 27128,
       "bounds": [
         0.16,
         0.135,
@@ -466,7 +1335,7 @@
       "path": "fixtures/towel_rail.glb",
       "group": "fixtures",
       "tris": 432,
-      "bytes": 24296,
+      "bytes": 24040,
       "bounds": [
         0.6,
         0.097,
@@ -477,7 +1346,7 @@
       "path": "fixtures/vanity_unit.glb",
       "group": "fixtures",
       "tris": 1136,
-      "bytes": 66980,
+      "bytes": 66252,
       "bounds": [
         0.92,
         0.543,
@@ -488,7 +1357,7 @@
       "path": "fixtures/washing_machine.glb",
       "group": "fixtures",
       "tris": 1608,
-      "bytes": 90372,
+      "bytes": 89800,
       "bounds": [
         0.6,
         0.63,

@@ -43,6 +43,7 @@ const PALETTE = new Set([
   'glass_clear', 'plastic_white', 'grime', 'teal', 'linen', 'ceramic',
   'leaf', 'rug', 'paper', 'chrome', 'cast_iron', 'rubber', 'brick',
   'render', 'roof_tile', 'asphalt', 'concrete', 'grass', 'mould',
+  'glass_frosted', 'fabric_olive', 'fabric_rust', 'fruit_red', 'fruit_orange',
 ]);
 
 const args = process.argv.slice(2);

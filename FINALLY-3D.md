@@ -54,9 +54,9 @@ Rules that never change:
 
 | Phase | Name | Spec | New models | Folder | Depends on | Status |
 |---|---|---|---|---|---|---|
-| 1 | **Shell** | §5 | 66 | `architecture/` | — | `[ ]` |
-| 2 | **Fixtures** | §6 | 56 | `fixtures/` | 1 | `[ ]` |
-| 3 | **Decor** | §7 | 78 | `decor/` | 1, 2 | `[ ]` |
+| 1 | **Shell** | §5 | 66 | `architecture/` | — | `[x]` |
+| 2 | **Fixtures** | §6 | 56 | `fixtures/` | 1 | `[x]` |
+| 3 | **Decor** | §7 | 78 | `decor/` | 1, 2 | `[x]` |
 | 4 | **Trash** | §8 | 39 | `trash/` | 1 (floors) | `[ ]` |
 | 5 | **Cleaning kit** | §9 | 21 | `tools/` | — | `[ ]` |
 | 6 | **Vehicles** | §10 | 27 | `vehicles/` | — | `[ ]` |
@@ -68,7 +68,7 @@ Rules that never change:
 **~419 models across ten phases.** Separately, 22 furniture pieces are already
 shipped (§1.2) and are not part of any phase.
 
-Progress: **0 / 10 phases complete.**
+Progress: **3 / 10 phases complete.**
 
 Smallest useful first step: Phase 1. Biggest visible jump for the least work:
 Phase 1, then 5, then 4. Phases 4, 5 and 6 are independent of everything and can
@@ -110,7 +110,8 @@ assets, starting the next phase, or committing with a check failing.
 | Phase | Finished | Commit | Note |
 |---|---|---|---|
 | 1 House shell | 23 Nov 2026 | `8f98a30` | 16 assets, 7,756 tris; walls/doors/windows/trim wired into `Room.ts` |
-| 2 Fixtures | 23 Nov 2026 | this commit | 29 assets, 28,572 tris; kitchen/bath/laundry placed; env map added |
+| 2 Fixtures | 23 Nov 2026 | `c367cdc` | 29 assets, 28,572 tris; kitchen/bath/laundry placed; env map added |
+| 3 Decor | 23 Nov 2026 | this commit | 79 assets, 39,620 tris; 110 props across all eight rooms; facing bug found and fixed |
 
 ---
 
@@ -369,8 +370,11 @@ never ship what the library gives you at 8K.
 - **Metres, always.** Door 2.10 m, worktop 0.90 m, seat 0.45 m, ceiling 2.60 m.
 - **Blender is Z-up, the game is Y-up.** Build standing on the Z=0 floor; the
   exporter rotates it. Never pre-rotate by hand.
-- **Forward is −Y in Blender** → −Z in three.js. Anything with a front
-  (sofa, wardrobe, car, toilet) faces −Y while you model it.
+- **Forward is −Y in Blender** → **+Z in three.js.** The exporter maps Blender
+  −Y onto glTF +Z, so a model faces −Y while you model it and a placement at
+  `rotation: 0` looks toward +Z in the scene. A model on the +Z wall therefore
+  needs `rotation: Math.PI`. (Phase 3 found this the hard way: every fixture
+  from Phase 2 was standing with its face in the wall. See §7.0.)
 - **World scale check:** if a mesh has to be scaled in code by anything other than
   `1`, the model is wrong. Fix the model.
 
@@ -818,9 +822,61 @@ changes the silhouette (a bin overflowing, a blocked drain).
 
 ---
 
-## §7. Phase 3 — decor, so rooms look lived in `[ ]`
+## §7. Phase 3 — decor, so rooms look lived in `[x]`
 
-**Status:** `[ ]` not started · **Depends on:** Phases 1–2 · **Done when:** all eight rooms have props on and around their furniture, and no room reads as empty.
+**Status:** `[x]` shipped 23 Nov 2026 · **Depends on:** Phases 1–2 · **Done when:** all eight rooms have props on and around their furniture, and no room reads as empty.
+
+### 7.0 What shipped
+
+Seventy-nine assets, **39,620 tris, 2.3 MB**, built by
+`tools/blender/build_decor.py` (helpers in `decor_common.py`, one module per
+section: `decor_living`, `decor_dining`, `decor_bedroom`, `decor_study`,
+`decor_entry`). Every asset is AO-baked, UV-mapped and pruned.
+
+`src/world/DecorLayout.ts` places **110 props across all eight rooms** and
+`Room.createDecor()` merges them **per material**, so the whole dressing of the
+house costs about a dozen draw calls instead of 110.
+
+| room | what is in it |
+|---|---|
+| living | pictures and a clock on the walls, a shelf with books/candle/fruit, CRT with console, game cases, remote, soundbar, floor cushions, magazine pile, floor vase |
+| entrance | coat hooks and a hanging jacket, shoe rack with keys tray, umbrella stand, doormat, mail, shopping bag, picture |
+| kitchen | spice rack and drying rack on the walls, chopping board, knife block, plate stack, pans on the hob, fruit bowl, cereal, placemat with a plate, cutlery, tumbler, cereal bowl |
+| dining | shelf with wine bottle, glass, teapot and a plate; two pictures |
+| master bedroom | clothes rail and hangers, two suitcases, folded duvet and pillow, two shoe pairs, two laundry piles, shelf with books, glasses, alarm clock and phone, teddy, cushion |
+| bedroom two | flat TV, toy blocks, teddy, throw, laundry, books, shoes, cable, shelf with a phone |
+| study | cork board, shelf with paper stack, notebook and pen cup, monitor, laptop, keyboard, mouse, desk lamp, floor fan, office bin |
+| bathroom | shampoo and conditioner on the bath, candle, soap and folded towel on the vanity, hanging towel, bath toy, scale |
+
+**Two bugs this phase uncovered, both fixed here:**
+
+1. **Every model was facing the wrong way.** The exporter turns Blender's −Y
+   (the face of each asset) into glTF **+Z**, so `rotation: 0` looks toward +Z.
+   All of Phase 2's fixtures were therefore turned into the walls — the kitchen
+   cabinets, the fridge and the vanity all showed their backs — and nothing had
+   caught it because the earlier screenshots were of what sits *on top* of them.
+   `FixtureLayout.ts` now names its rotations `SOUTH_WALL`, `NORTH_WALL`,
+   `WEST_WALL`, `EAST_WALL`, and `DecorLayout.ts` does the same. §3.1 is corrected.
+2. **Black cabinet doors.** The raised panel on every shaker door was modelled
+   *behind* the door slab, so it was both invisible and fully occluded — the AO
+   bake gave it near-zero light and it showed as a black rectangle. The panel
+   now sits proud of the slab. (Same fix in `kitchen_upper`.)
+
+Deferred, deliberately:
+
+- **`table_runner`** is built and validated but not placed: it is 2 m long and
+  there is no table to put it on until the player buys one.
+- **Soft furnishings that belong on furniture** (cushions and throws on a sofa,
+  tableware on a dining table) are built and waiting for a furniture-anchored
+  pass; furniture in this game is player-placed, so decor cannot assume it.
+- **LOD1s** (§18). The props are 60–1,000 tris each and merged, so the win is
+  not worth the extra files yet.
+- Bedroom rooms still read sparse until a bed and wardrobe are bought. Decor is
+  not a substitute for furniture.
+
+`wall_shelf` is the one asset not in the table below: `shelf_bracket` alone
+cannot hold anything, so the board is its own 24-triangle model and the brackets
+are placed under it.
 
 Folder: `public/models/decor/`
 
@@ -1540,7 +1596,7 @@ Run it in the phase done-check. Exit code 1 on any failure.
 |---|---|---|
 | architecture | `Room.ts`: replace `createWallsWithOpenings`, `createWallSegment`, `createBaseboards`, `createDoorFrames`, `createWindowFrames`, `createCrownMolding` with module instancing | `HouseLayout.ts` room data, spawn point |
 | fixtures | new `FIXTURES` map in `FurnitureManager.ts`; placement in `HouseLayout` | existing furniture ids |
-| decor | new `DecorPlacer` (new file) reading per-room lists | furniture transforms |
+| decor | `DecorLayout.ts` (per-room wall/floor lists) + `Room.createDecor()` merged per material | furniture transforms |
 | trash | `TrashManager.ts`: box factory → GLB clone | `TRASH_TYPES` names/sizes/masses, spawn logic |
 | tools | `DiegeticHUD.ts`: delete `buildSprayBottle`, `buildMop`; load GLBs, keep anchors and the `liquid` object name | `CleaningSystem` tool defs |
 | vehicles | `VehicleVisual.ts`: box builder → GLB clone; `Vehicle.ts::createWheel()` optional swap | `VehicleSpecs` numbers, physics |

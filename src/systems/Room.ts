@@ -6,6 +6,7 @@ import { HOUSE_LAYOUT, getFloorBounds, getAllWallSurfaces } from './HouseLayout.
 import type { DoorData, WindowData } from './HouseLayout.js';
 import { ModelLibrary } from '../world/ModelLibrary.js';
 import { FIXTURE_PLACEMENTS } from '../world/FixtureLayout.js';
+import { DECOR_PLACEMENTS } from '../world/DecorLayout.js';
 
 const MODULE_HEIGHT = 3.0;
 const WALL_HALF_THICKNESS = 0.065;
@@ -123,6 +124,7 @@ export class Room {
   public windowFrames: THREE.Group[] = [];
   public baseboards: THREE.Mesh[] = [];
   public fixtures: THREE.Mesh[] = [];
+  public decor: THREE.Mesh[] = [];
   public trashManager!: TrashManager;
 
   private scene: THREE.Scene;
@@ -137,6 +139,7 @@ export class Room {
     await ModelLibrary.preload(SHELL_ASSETS);
     this.createHouse();
     await this.createFixtures();
+    await this.createDecor();
     this.scene.add(this.houseGroup);
 
     this.trashManager = new TrashManager(this.scene, this.floor);
@@ -573,12 +576,66 @@ export class Room {
     this.houseGroup.add(group);
   }
 
+  /**
+   * Props from §7, merged by material (FINALLY-3D.md §18).
+   *
+   * Placements are static, so instead of ~90 meshes the whole dressing of the
+   * house becomes a dozen draw calls: one per shared material. That keeps the
+   * phone profile inside its budget without dropping any props.
+   */
+  private async createDecor(): Promise<void> {
+    const paths = [...new Set(DECOR_PLACEMENTS.map(placement => placement.asset))].map(
+      asset => `/models/decor/${asset}.glb`
+    );
+    await ModelLibrary.preload(paths);
+
+    const buckets = new Map<string, { material: THREE.Material; geometries: THREE.BufferGeometry[] }>();
+    const placementMatrix = new THREE.Matrix4();
+    const worldMatrix = new THREE.Matrix4();
+
+    for (const placement of DECOR_PLACEMENTS) {
+      const template = ModelLibrary.clone(`/models/decor/${placement.asset}.glb`);
+      if (!template) continue;
+      template.updateMatrixWorld(true);
+      placementMatrix
+        .makeTranslation(placement.x, placement.y, placement.z)
+        .multiply(new THREE.Matrix4().makeRotationY(placement.rotation));
+
+      template.traverse(child => {
+        if (!(child instanceof THREE.Mesh)) return;
+        const material = Array.isArray(child.material) ? child.material[0] : child.material;
+        const key = material.name || material.uuid;
+        let bucket = buckets.get(key);
+        if (!bucket) {
+          bucket = { material, geometries: [] };
+          buckets.set(key, bucket);
+        }
+        worldMatrix.copy(placementMatrix).multiply(child.matrixWorld);
+        bucket.geometries.push(child.geometry.clone().applyMatrix4(worldMatrix));
+      });
+    }
+
+    const group = new THREE.Group();
+    group.name = 'decor';
+    for (const bucket of buckets.values()) {
+      const merged = mergeGeometries(bucket.geometries, false);
+      bucket.geometries.forEach(geometry => geometry.dispose());
+      if (!merged) continue;
+      const mesh = new THREE.Mesh(merged, bucket.material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.decor.push(mesh);
+      group.add(mesh);
+    }
+    this.houseGroup.add(group);
+  }
+
   update(delta: number): void {
     this.trashManager?.update(delta);
   }
 
   getCleanableSurfaces(): THREE.Mesh[] {
-    return [...this.fixtures, this.floor, ...this.walls];
+    return [...this.fixtures, ...this.decor, this.floor, ...this.walls];
   }
 
   getFloorBounds(): { min: THREE.Vector2; max: THREE.Vector2 } {

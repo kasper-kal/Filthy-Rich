@@ -42,9 +42,12 @@ def handle(name, x, z, y=-DEPTH / 2 - 0.015, vertical=False):
 
 def door_panel(name, x, z, w, h, y=-DEPTH / 2 - 0.011):
     """Shaker door: slab plus a raised centre panel."""
+    # The panel must sit in FRONT of the slab (more negative Y is outward):
+    # buried inside it, the face is both invisible and fully occluded, which
+    # baked to black AO and showed up as black door centres.
     parts = [
         lib.box(name + "_slab", (w, 0.018, h), (x, y, z), "paint_white", 0.003),
-        lib.box(name + "_panel", (w - 0.09, 0.022, h - 0.09), (x, y + 0.002, z), "paint_white", 0.004),
+        lib.box(name + "_panel", (w - 0.09, 0.012, h - 0.09), (x, y - 0.004, z), "paint_white", 0.004),
     ]
     return parts
 
@@ -52,7 +55,7 @@ def door_panel(name, x, z, w, h, y=-DEPTH / 2 - 0.011):
 def drawer_front(name, x, z, w, h, y=-DEPTH / 2 - 0.011):
     return [
         lib.box(name + "_front", (w, 0.018, h), (x, y, z), "paint_white", 0.003),
-        lib.box(name + "_pull", (w - 0.06, 0.02, h - 0.04), (x, y + 0.002, z), "paint_white", 0.004),
+        lib.box(name + "_pull", (w - 0.06, 0.012, h - 0.04), (x, y - 0.004, z), "paint_white", 0.004),
     ]
 
 
@@ -117,7 +120,7 @@ def kitchen_upper():
     ]
     for sx in (-0.25, 0.25):
         parts.append(lib.box("door_%d" % int(sx * 100), (0.47, 0.018, h - 0.035), (sx, -d / 2 - 0.009, h / 2), "paint_white", 0.003))
-        parts.append(lib.box("panel_%d" % int(sx * 100), (0.39, 0.022, h - 0.12), (sx, -d / 2 - 0.007, h / 2), "paint_white", 0.004))
+        parts.append(lib.box("panel_%d" % int(sx * 100), (0.39, 0.012, h - 0.12), (sx, -d / 2 - 0.013, h / 2), "paint_white", 0.004))
     parts.append(lib.box("h_a", (0.012, 0.018, 0.12), (-0.03, -d / 2 - 0.03, 0.2), "brass", 0.004))
     parts.append(lib.box("h_b", (0.012, 0.018, 0.12), (0.03, -d / 2 - 0.03, 0.2), "brass", 0.004))
     return lib.join(parts, "kitchen_upper")
