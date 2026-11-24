@@ -114,6 +114,7 @@ assets, starting the next phase, or committing with a check failing.
 | 3 Decor | 23 Nov 2026 | `79704a2` | 79 assets, 39,620 tris; 110 props across all eight rooms; facing bug found and fixed |
 | 4 Trash | 23 Nov 2026 | `9cedf55` | 46 assets, 7,998 tris; 31 spawn types modelled, box factory deleted; bob and spin removed |
 | 5 Cleaning kit | 23 Nov 2026 | `c898c21` | 21 assets, 9,636 tris; four tools + glove wired into the HUD, primitive builders deleted; prune skipped because it eats the sockets |
+| 6 Vehicles | 24 Nov 2026 | `f4199b7` | 29 assets, 90,827 tris; seven bodies with real arch cut-outs and `PANEL_NAMES` meshes, wheels moved onto the spec's wheelbase, cabin interior behind transparent glass; box builder deleted |
 
 ---
 
@@ -1303,6 +1304,18 @@ the group budget. The recovery truck has four arches rather than six: `Vehicle`
 places exactly four wheels, and an empty arch looks worse than a missing axle.
 The 27 in §0.2 became 29 because `damage_panel_set` is three dented panels, two
 screens and a bumper.
+
+**6. A pre-existing defect this phase found and deliberately did not touch.**
+`Vehicle.updateVisual()` copies the physics wheel position — a **world**
+coordinate — straight into a **local** child transform
+(`wheel.position.copy(state.position)`), and copies the physics body centre onto
+a model whose origin is at ground level. While the car is parked nothing calls
+that code, which is why the car looks right at rest and why the bug has never
+been reported. It is untouched here because fixing it needs the car driven and
+watched, and this VM renders the game at about one frame per second. The fix is
+a world-to-local conversion (`(state.position - chassis.position)` rotated by the
+inverse chassis quaternion) plus an offset for the body centre; do it with a
+real browser.
 
 **Read `src/vehicle/Vehicle.ts::createWheel()` before you build.** Wheels are not
 part of the body: `Vehicle` creates them and positions them from `VehicleSpecs`
