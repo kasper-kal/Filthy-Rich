@@ -45,6 +45,8 @@ const PALETTE = new Set([
   'render', 'roof_tile', 'asphalt', 'concrete', 'grass', 'mould',
   'glass_frosted', 'fabric_olive', 'fabric_rust', 'fruit_red', 'fruit_orange',
   'glass_green', 'cardboard', 'foil', 'plastic_red', 'grease',
+  'paint', 'glass_tint', 'leather_black', 'rust', 'rug_red',
+  'emissive_warm', 'emissive_cool', 'emissive_red',
 ]);
 
 const args = process.argv.slice(2);

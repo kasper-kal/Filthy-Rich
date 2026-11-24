@@ -53,6 +53,17 @@ PALETTE = {
     "asphalt": ((0.07, 0.07, 0.075), 0.95, 0.0),
     "rubber": ((0.03, 0.03, 0.035), 0.80, 0.0),
     "leaf": ((0.048, 0.195, 0.034), 0.65, 0.0),
+    # Phase 6 — vehicles. `paint` is a neutral light grey on purpose: the game
+    # tints this one slot from VehicleSpecs.colour, and a grey tints true.
+    "paint": ((0.62, 0.63, 0.64), 0.30, 0.15),
+    "glass_tint": ((0.055, 0.075, 0.085), 0.06, 0.0),
+    "leather_black": ((0.022, 0.021, 0.020), 0.55, 0.0),
+    "teal": ((0.030, 0.150, 0.190), 0.85, 0.0),
+    "rust": ((0.290, 0.100, 0.040), 0.85, 0.2),
+    "rug_red": ((0.190, 0.030, 0.035), 0.95, 0.0),
+    "emissive_warm": ((0.85, 0.68, 0.42), 0.35, 0.0),
+    "emissive_cool": ((0.60, 0.75, 0.90), 0.30, 0.0),
+    "emissive_red": ((0.42, 0.030, 0.020), 0.30, 0.0),
 }
 
 BUDGET = {
@@ -86,6 +97,10 @@ def material(key):
     bsdf.inputs["Base Color"].default_value = (*color, 1.0)
     bsdf.inputs["Roughness"].default_value = rough
     bsdf.inputs["Metallic"].default_value = metal
+    if key.startswith("emissive"):
+        # Lamp lenses and screens read as light sources only if they emit.
+        bsdf.inputs["Emission Color"].default_value = (*color, 1.0)
+        bsdf.inputs["Emission Strength"].default_value = 2.0
     return mat
 
 

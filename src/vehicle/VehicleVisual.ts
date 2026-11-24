@@ -1,182 +1,159 @@
 import * as THREE from 'three';
 import type { VehicleSpecsData } from './VehicleSpecs.js';
+import { ModelLibrary } from '../world/ModelLibrary.js';
 
 /**
- * Builds the procedural chassis visual for a vehicle.
+ * The Blender-built chassis (FINALLY-3D.md §10).
  *
- * The returned group's origin is at ground level beneath the centre of the car,
- * matching the wheel positions Vehicle.createWheel() uses (y === wheelRadius).
- * Wheels are added as children by Vehicle itself, so nothing wheel-related lives here.
+ * A body is a real model now: the panels are named after `PANEL_NAMES`, so
+ * `DamageVisuals` can dent `front_left_door` and crack `front_windshield`
+ * without knowing anything about how the car was built. The model is authored
+ * with its origin on the ground under the centre of the wheelbase, exactly
+ * where `VehiclePhysics` puts the chassis, so nothing here needs a transform.
+ *
+ * Wheels are NOT in the body file: `Vehicle` owns them and positions them from
+ * the spec (wheelbase, track, radius). That is why every body has real arch
+ * cut-outs and nothing sitting in them.
  */
+
+const BODY_MODELS: Record<string, string> = {
+  hatchback: '/models/vehicles/car_hatch.glb',
+  banger: '/models/vehicles/car_hatch.glb',
+  sedan: '/models/vehicles/car_sedan.glb',
+  estate: '/models/vehicles/car_estate.glb',
+  van: '/models/vehicles/car_van.glb',
+  sports: '/models/vehicles/car_coupe.glb',
+  pickup: '/models/vehicles/car_pickup.glb',
+  truck: '/models/vehicles/recovery_truck.glb',
+};
+
+const WHEEL_MODELS: Record<string, string> = {
+  hatchback: '/models/vehicles/wheel_standard.glb',
+  banger: '/models/vehicles/wheel_steel.glb',
+  sedan: '/models/vehicles/wheel_standard.glb',
+  estate: '/models/vehicles/wheel_standard.glb',
+  van: '/models/vehicles/wheel_steel.glb',
+  sports: '/models/vehicles/wheel_sport.glb',
+  pickup: '/models/vehicles/wheel_recovery.glb',
+  truck: '/models/vehicles/wheel_recovery.glb',
+};
+
+/** Radius each wheel asset was modelled at; the spec's radius wins at runtime. */
+const WHEEL_RADII: Record<string, number> = {
+  wheel_standard: 0.31,
+  wheel_sport: 0.33,
+  wheel_steel: 0.30,
+  wheel_recovery: 0.40,
+};
+
+const CABIN_MODEL = '/models/vehicles/interior_cabin.glb';
+/** The cabin interior was authored to the hatchback; only close cabins wear it. */
+const CABIN_BODIES = new Set(['car_hatch', 'car_sedan', 'car_estate', 'car_coupe']);
+
+const assetName = (path: string): string => (path.split('/').pop() ?? '').replace('.glb', '');
+
+export function bodyModelPath(specs: VehicleSpecsData): string {
+  return BODY_MODELS[specs.type] ?? BODY_MODELS['hatchback'];
+}
+
+export function wheelModelPath(specs: VehicleSpecsData): string {
+  return WHEEL_MODELS[specs.type] ?? WHEEL_MODELS['hatchback'];
+}
+
+export function wheelModelRadius(path: string): number {
+  return WHEEL_RADII[assetName(path)] ?? 0.31;
+}
+
+/** Everything a vehicle needs on disk, so the game can warm the cache at boot. */
+export function vehicleAssets(specs: VehicleSpecsData): string[] {
+  const body = bodyModelPath(specs);
+  const assets = [body, wheelModelPath(specs)];
+  if (CABIN_BODIES.has(assetName(body))) assets.push(CABIN_MODEL);
+  return assets;
+}
+
+/**
+ * Give the clone its own materials so one car's paint cannot tint another's.
+ * `paint` is tinted from the spec; the glass is made transparent; the lamps get
+ * an emissive glow so headlights read at night without a light rig.
+ */
+function ownMaterials(root: THREE.Object3D, specs: VehicleSpecsData): void {
+  const owned = new Map<THREE.Material, THREE.Material>();
+
+  const adopt = (material: THREE.Material): THREE.Material => {
+    const existing = owned.get(material);
+    if (existing) return existing;
+
+    const copy = material.clone();
+    copy.name = material.name;
+    if (material.name === 'fr_paint' && 'color' in copy) {
+      (copy as THREE.MeshStandardMaterial).color.setHex(specs.color);
+    } else if (material.name === 'fr_glass_tint' && 'transparent' in copy) {
+      const glass = copy as THREE.MeshStandardMaterial;
+      glass.transparent = true;
+      glass.opacity = 0.62;
+      glass.depthWrite = false;
+      glass.roughness = 0.06;
+      glass.metalness = 0.1;
+    } else if (material.name === 'fr_emissive_warm') {
+      const lamp = copy as THREE.MeshStandardMaterial;
+      lamp.emissive = new THREE.Color(0xffe6b0);
+      lamp.emissiveIntensity = 0.45;
+    } else if (material.name === 'fr_emissive_red') {
+      const lamp = copy as THREE.MeshStandardMaterial;
+      lamp.emissive = new THREE.Color(0xd42a18);
+      lamp.emissiveIntensity = 0.5;
+    }
+    owned.set(material, copy);
+    return copy;
+  };
+
+  root.traverse(child => {
+    if (!(child instanceof THREE.Mesh)) return;
+    child.castShadow = true;
+    child.receiveShadow = true;
+    child.material = Array.isArray(child.material)
+      ? child.material.map(adopt)
+      : adopt(child.material);
+  });
+}
+
+function attachBody(group: THREE.Group, specs: VehicleSpecsData): void {
+  const path = bodyModelPath(specs);
+  const body = ModelLibrary.clone(path);
+  if (!body) {
+    // The car is only visible outside, so a late model beats blocking the boot.
+    void ModelLibrary.load(path)
+      .then(() => attachBody(group, specs))
+      .catch(error => console.warn(`[VehicleVisual] could not load ${path}`, error));
+    return;
+  }
+
+  body.name = 'chassis_model';
+  ownMaterials(body, specs);
+  group.add(body);
+
+  if (CABIN_BODIES.has(assetName(path))) {
+    const cabin = ModelLibrary.clone(CABIN_MODEL);
+    if (cabin) {
+      cabin.name = 'interior_cabin';
+      cabin.traverse(child => {
+        if (child instanceof THREE.Mesh) {
+          child.castShadow = false;
+          child.receiveShadow = true;
+        }
+      });
+      group.add(cabin);
+    }
+  }
+}
+
 export function createVehicleVisual(specs: VehicleSpecsData, id: string): THREE.Group {
   const group = new THREE.Group();
   group.name = `vehicle_visual_${id}`;
-
-  const { length, width, height } = specs.dimensions;
-  const isBoxy = specs.type === 'van' || specs.type === 'truck';
-
-  const bodyPaint = new THREE.MeshStandardMaterial({
-    color: specs.color,
-    roughness: 0.35,
-    metalness: 0.65,
-  });
-  const trim = new THREE.MeshStandardMaterial({
-    color: 0x1a1a1c,
-    roughness: 0.7,
-    metalness: 0.3,
-  });
-  const glass = new THREE.MeshStandardMaterial({
-    color: 0x0d1a24,
-    roughness: 0.08,
-    metalness: 0.9,
-    transparent: true,
-    opacity: 0.72,
-  });
-  const headlightGlass = new THREE.MeshStandardMaterial({
-    color: 0xfff4d6,
-    emissive: 0xffe9b0,
-    emissiveIntensity: 0.35,
-    roughness: 0.2,
-    metalness: 0.1,
-  });
-  const taillightGlass = new THREE.MeshStandardMaterial({
-    color: 0x8c1a12,
-    emissive: 0xcc2a1a,
-    emissiveIntensity: 0.3,
-    roughness: 0.3,
-    metalness: 0.1,
-  });
-
-  const addBox = (
-    size: { x: number; y: number; z: number },
-    position: { x: number; y: number; z: number },
-    material: THREE.Material,
-    name: string
-  ): THREE.Mesh => {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), material);
-    mesh.position.set(position.x, position.y, position.z);
-    mesh.name = name;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    group.add(mesh);
-    return mesh;
-  };
-
-  // Body proportions scale with the spec sheet so a van reads as a van.
-  const sillHeight = Math.min(0.45, height * 0.3);
-  const bodyHeight = isBoxy ? height * 0.55 : height * 0.42;
-  const bodyCenterY = sillHeight + bodyHeight / 2;
-  const cabinHeight = isBoxy ? height * 0.34 : height * 0.3;
-  const cabinLength = isBoxy ? length * 0.72 : length * 0.52;
-  const cabinCenterZ = isBoxy ? -length * 0.06 : -length * 0.04;
-  const cabinCenterY = bodyCenterY + bodyHeight / 2 + cabinHeight / 2;
-
-  // Main body and cabin.
-  addBox(
-    { x: width, y: bodyHeight, z: length },
-    { x: 0, y: bodyCenterY, z: 0 },
-    bodyPaint,
-    'chassis_body'
-  );
-  addBox(
-    { x: width * 0.9, y: cabinHeight, z: cabinLength },
-    { x: 0, y: cabinCenterY, z: cabinCenterZ },
-    bodyPaint,
-    'chassis_cabin'
-  );
-
-  // Greenhouse: windscreen, rear screen and side glass sit slightly proud of the cabin.
-  const glassY = cabinCenterY + cabinHeight * 0.05;
-  const glassZ = cabinLength / 2;
-  addBox(
-    { x: width * 0.82, y: cabinHeight * 0.62, z: 0.05 },
-    { x: 0, y: glassY, z: cabinCenterZ + glassZ - 0.06 },
-    glass,
-    'glass_windscreen'
-  );
-  addBox(
-    { x: width * 0.82, y: cabinHeight * 0.55, z: 0.05 },
-    { x: 0, y: glassY, z: cabinCenterZ - glassZ + 0.06 },
-    glass,
-    'glass_rear'
-  );
-  addBox(
-    { x: width * 0.905, y: cabinHeight * 0.5, z: cabinLength * 0.66 },
-    { x: 0, y: glassY, z: cabinCenterZ },
-    glass,
-    'glass_sides'
-  );
-
-  // Bumpers, front and rear.
-  addBox(
-    { x: width * 1.01, y: 0.28, z: 0.22 },
-    { x: 0, y: sillHeight + 0.12, z: length / 2 - 0.09 },
-    trim,
-    'bumper_front'
-  );
-  addBox(
-    { x: width * 1.01, y: 0.26, z: 0.2 },
-    { x: 0, y: sillHeight + 0.12, z: -length / 2 + 0.08 },
-    trim,
-    'bumper_rear'
-  );
-
-  // Grille.
-  addBox(
-    { x: width * 0.55, y: 0.16, z: 0.06 },
-    { x: 0, y: sillHeight + 0.42, z: length / 2 - 0.005 },
-    trim,
-    'grille'
-  );
-
-  // Headlights and tail lights.
-  const lampY = sillHeight + 0.48;
-  const lampX = width * 0.34;
-  for (const side of [-1, 1]) {
-    addBox(
-      { x: width * 0.22, y: 0.13, z: 0.05 },
-      { x: side * lampX, y: lampY, z: length / 2 - 0.002 },
-      headlightGlass,
-      side < 0 ? 'headlight_left' : 'headlight_right'
-    );
-    addBox(
-      { x: width * 0.2, y: 0.15, z: 0.05 },
-      { x: side * lampX, y: lampY, z: -length / 2 + 0.002 },
-      taillightGlass,
-      side < 0 ? 'taillight_left' : 'taillight_right'
-    );
-  }
-
-  // Wing mirrors.
-  for (const side of [-1, 1]) {
-    addBox(
-      { x: 0.12, y: 0.08, z: 0.14 },
-      { x: side * (width / 2 + 0.05), y: cabinCenterY - cabinHeight * 0.1, z: cabinLength / 2 - 0.3 },
-      trim,
-      side < 0 ? 'mirror_left' : 'mirror_right'
-    );
-  }
-
-  // Side skirts, which also hide the seam between body and wheels.
-  for (const side of [-1, 1]) {
-    addBox(
-      { x: 0.06, y: 0.1, z: length * 0.62 },
-      { x: side * (width / 2 - 0.01), y: sillHeight, z: 0 },
-      trim,
-      side < 0 ? 'skirt_left' : 'skirt_right'
-    );
-  }
-
-  // Exhaust.
-  addBox(
-    { x: 0.08, y: 0.08, z: 0.14 },
-    { x: -width * 0.26, y: sillHeight - 0.02, z: -length / 2 - 0.02 },
-    trim,
-    'exhaust'
-  );
-
   group.userData['specsName'] = specs.name;
   group.userData['vehicleId'] = id;
 
+  attachBody(group, specs);
   return group;
 }

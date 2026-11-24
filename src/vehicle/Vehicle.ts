@@ -6,7 +6,8 @@ import { Drivetrain } from './Drivetrain.js';
 import { VehiclePhysics } from './VehiclePhysics.js';
 import type { SeatPosition } from './EnterExitSystem.js';
 import type { audioManager } from '../systems/AudioManager.js';
-import { createVehicleVisual } from './VehicleVisual.js';
+import { createVehicleVisual, wheelModelPath, wheelModelRadius } from './VehicleVisual.js';
+import { ModelLibrary } from '../world/ModelLibrary.js';
 
 export type VehicleType = 'hatchback' | 'sedan' | 'van' | 'sports' | 'truck';
 
@@ -83,14 +84,17 @@ export class Vehicle {
     this.chassis = createVehicleVisual(this.specs, this.id);
     this.chassis.name = this.id;
 
-    // Wheel positions (FL, FR, RL, RR)
-    const halfW = this.specs.dimensions.width / 2;
-    const halfL = this.specs.dimensions.length / 2;
+    // Wheel positions (FL, FR, RL, RR). The spec's wheelbase and track decide
+    // these, not the length and width: axles belong under the car, and the
+    // body models cut their arches exactly here (FINALLY-3D.md §10.0).
+    const halfTrackFront = this.specs.dimensions.trackFront / 2;
+    const halfTrackRear = this.specs.dimensions.trackRear / 2;
+    const halfBase = this.specs.dimensions.wheelbase / 2;
     this.wheelPositions = [
-      new THREE.Vector3(-halfW + 0.15, this.specs.wheelRadius, halfL - 0.15), // FL
-      new THREE.Vector3(halfW - 0.15, this.specs.wheelRadius, halfL - 0.15), // FR
-      new THREE.Vector3(-halfW + 0.15, this.specs.wheelRadius, -halfL + 0.15), // RL
-      new THREE.Vector3(halfW - 0.15, this.specs.wheelRadius, -halfL + 0.15), // RR
+      new THREE.Vector3(-halfTrackFront, this.specs.wheelRadius, halfBase), // FL
+      new THREE.Vector3(halfTrackFront, this.specs.wheelRadius, halfBase), // FR
+      new THREE.Vector3(-halfTrackRear, this.specs.wheelRadius, -halfBase), // RL
+      new THREE.Vector3(halfTrackRear, this.specs.wheelRadius, -halfBase), // RR
     ];
 
     // Create wheels
@@ -105,67 +109,67 @@ export class Vehicle {
 
   private createWheel(index: number): THREE.Group {
     const wheelGroup = new THREE.Group();
+    wheelGroup.name = `wheel_${index}`;
 
-    // Rim
-    const rimGeom = new THREE.CylinderGeometry(
-      this.specs.wheelRadius * 0.6,
-      this.specs.wheelRadius * 0.6,
-      this.specs.wheelWidth,
-      16
-    );
-    const rimMat = new THREE.MeshStandardMaterial({
-      color: 0x333333,
-      roughness: 0.3,
-      metalness: 0.8,
-    });
-    const rim = new THREE.Mesh(rimGeom, rimMat);
-    rim.rotation.z = Math.PI / 2;
-    wheelGroup.add(rim);
-
-    // Tire
-    const tireGeom = new THREE.CylinderGeometry(
-      this.specs.wheelRadius,
-      this.specs.wheelRadius,
-      this.specs.wheelWidth * 1.1,
-      16
-    );
-    const tireMat = new THREE.MeshStandardMaterial({
-      color: 0x111111,
-      roughness: 0.9,
-      metalness: 0.0,
-    });
-    const tire = new THREE.Mesh(tireGeom, tireMat);
-    tire.rotation.z = Math.PI / 2;
-    wheelGroup.add(tire);
-
-    // Brake disc
-    const discGeom = new THREE.CylinderGeometry(
-      this.specs.wheelRadius * 0.4,
-      this.specs.wheelRadius * 0.4,
-      0.02,
-      16
-    );
-    const discMat = new THREE.MeshStandardMaterial({
-      color: 0x444444,
-      roughness: 0.5,
-      metalness: 0.5,
-    });
-    const disc = new THREE.Mesh(discGeom, discMat);
-    disc.rotation.z = Math.PI / 2;
-    disc.position.x = index % 2 === 0 ? 0.12 : -0.12; // Left/right offset
-    wheelGroup.add(disc);
-
-    // Caliper
-    const caliperGeom = new THREE.BoxGeometry(0.08, 0.12, 0.15);
-    const caliperMat = new THREE.MeshStandardMaterial({ color: 0xff3300, roughness: 0.4 });
-    const caliper = new THREE.Mesh(caliperGeom, caliperMat);
-    caliper.position.set(index % 2 === 0 ? 0.18 : -0.18, 0, 0);
-    wheelGroup.add(caliper);
+    // A wheel asset is modelled at one nominal radius (a 0.31 m standard tyre)
+    // and the spec's radius is the truth, so the model takes one uniform scale.
+    // This is the only place in the game that scales a model, and §10.0 says why:
+    // a tyre's size IS the spec, and shipping five sizes of every wheel would
+    // cost more than the whole body.
+    const path = wheelModelPath(this.specs);
+    const model = ModelLibrary.clone(path);
+    if (model) {
+      this.mountWheelModel(wheelGroup, model, path);
+    } else {
+      // Visible for a frame or two at most, and the safety net if an asset 404s.
+      this.mountWheelFallback(wheelGroup);
+      void ModelLibrary.load(path)
+        .then(() => {
+          const loaded = ModelLibrary.clone(path);
+          if (!loaded) return;
+          wheelGroup.clear();
+          this.mountWheelModel(wheelGroup, loaded, path);
+        })
+        .catch(error => console.warn(`[Vehicle] could not load ${path}`, error));
+    }
 
     wheelGroup.position.copy(this.wheelPositions[index]);
-    wheelGroup.rotation.z = Math.PI / 2;
-
     return wheelGroup;
+  }
+
+  private mountWheelModel(group: THREE.Group, model: THREE.Group, path: string): void {
+    model.scale.setScalar(this.specs.wheelRadius / wheelModelRadius(path));
+    model.name = 'wheel_model';
+    model.traverse(child => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    group.add(model);
+  }
+
+  private mountWheelFallback(group: THREE.Group): void {
+    const tyre = new THREE.Mesh(
+      new THREE.CylinderGeometry(this.specs.wheelRadius, this.specs.wheelRadius, this.specs.wheelWidth, 16),
+      new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 })
+    );
+    tyre.rotation.z = Math.PI / 2;
+    tyre.name = 'wheel_fallback_tyre';
+    group.add(tyre);
+
+    const rim = new THREE.Mesh(
+      new THREE.CylinderGeometry(
+        this.specs.wheelRadius * 0.6,
+        this.specs.wheelRadius * 0.6,
+        this.specs.wheelWidth * 1.05,
+        16
+      ),
+      new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.3, metalness: 0.8 })
+    );
+    rim.rotation.z = Math.PI / 2;
+    rim.name = 'wheel_fallback_rim';
+    group.add(rim);
   }
 
   update(

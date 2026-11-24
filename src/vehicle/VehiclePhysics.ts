@@ -196,14 +196,19 @@ export class VehiclePhysics {
       sideAcceleration: 0,
     };
 
-    // Wheel positions (FL, FR, RL, RR)
-    const halfW = this.specs.dimensions.width / 2;
-    const halfL = this.specs.dimensions.length / 2;
+    // Wheel positions (FL, FR, RL, RR). These used to sit at `halfLength - 0.15`,
+    // which put the axles almost in the bumpers and made a real wheel arch
+    // impossible; the spec's wheelbase and track are the honest numbers
+    // (FINALLY-3D.md §10.0). The body models cut their arches at exactly these
+    // points, so moving one without the other leaves the wheels outside the car.
+    const halfTrackFront = this.specs.dimensions.trackFront / 2;
+    const halfTrackRear = this.specs.dimensions.trackRear / 2;
+    const halfBase = this.specs.dimensions.wheelbase / 2;
     const wheelPositions = [
-      new CANNON.Vec3(-halfW + 0.15, 0, halfL - 0.15), // FL
-      new CANNON.Vec3(halfW - 0.15, 0, halfL - 0.15), // FR
-      new CANNON.Vec3(-halfW + 0.15, 0, -halfL + 0.15), // RL
-      new CANNON.Vec3(halfW - 0.15, 0, -halfL + 0.15), // RR
+      new CANNON.Vec3(-halfTrackFront, 0, halfBase), // FL
+      new CANNON.Vec3(halfTrackFront, 0, halfBase), // FR
+      new CANNON.Vec3(-halfTrackRear, 0, -halfBase), // RL
+      new CANNON.Vec3(halfTrackRear, 0, -halfBase), // RR
     ];
 
     for (let i = 0; i < 4; i++) {

@@ -2100,6 +2100,325 @@
         0.301,
         0.041
       ]
+    },
+    {
+      "path": "vehicles/car_coupe.glb",
+      "group": "vehicles",
+      "tris": 9808,
+      "bytes": 387940,
+      "bounds": [
+        2.1,
+        4.3,
+        1.036
+      ]
+    },
+    {
+      "path": "vehicles/car_estate.glb",
+      "group": "vehicles",
+      "tris": 10816,
+      "bytes": 446252,
+      "bounds": [
+        2.07,
+        4.8,
+        1.299
+      ]
+    },
+    {
+      "path": "vehicles/car_hatch.glb",
+      "group": "vehicles",
+      "tris": 10624,
+      "bytes": 430736,
+      "bounds": [
+        2.0,
+        4.0,
+        1.3
+      ]
+    },
+    {
+      "path": "vehicles/car_pickup.glb",
+      "group": "vehicles",
+      "tris": 11854,
+      "bytes": 456744,
+      "bounds": [
+        2.15,
+        5.4,
+        1.618
+      ]
+    },
+    {
+      "path": "vehicles/car_sedan.glb",
+      "group": "vehicles",
+      "tris": 10744,
+      "bytes": 432912,
+      "bounds": [
+        2.1,
+        4.7,
+        1.229
+      ]
+    },
+    {
+      "path": "vehicles/car_van.glb",
+      "group": "vehicles",
+      "tris": 9114,
+      "bytes": 367016,
+      "bounds": [
+        2.25,
+        5.0,
+        2.065
+      ]
+    },
+    {
+      "path": "vehicles/damage_panel_set.glb",
+      "group": "vehicles",
+      "tris": 784,
+      "bytes": 40384,
+      "bounds": [
+        2.97,
+        1.577,
+        1.634
+      ]
+    },
+    {
+      "path": "vehicles/dashboard.glb",
+      "group": "vehicles",
+      "tris": 1184,
+      "bytes": 68048,
+      "bounds": [
+        1.44,
+        0.333,
+        0.294
+      ]
+    },
+    {
+      "path": "vehicles/exhaust_tip.glb",
+      "group": "vehicles",
+      "tris": 140,
+      "bytes": 6952,
+      "bounds": [
+        0.09,
+        0.237,
+        0.235
+      ]
+    },
+    {
+      "path": "vehicles/hubcap.glb",
+      "group": "vehicles",
+      "tris": 128,
+      "bytes": 6968,
+      "bounds": [
+        0.03,
+        0.38,
+        0.38
+      ]
+    },
+    {
+      "path": "vehicles/interior_cabin.glb",
+      "group": "vehicles",
+      "tris": 4152,
+      "bytes": 254440,
+      "bounds": [
+        1.515,
+        1.706,
+        1.1
+      ]
+    },
+    {
+      "path": "vehicles/light_head_pair.glb",
+      "group": "vehicles",
+      "tris": 1040,
+      "bytes": 56404,
+      "bounds": [
+        0.98,
+        0.125,
+        0.13
+      ]
+    },
+    {
+      "path": "vehicles/light_tail_pair.glb",
+      "group": "vehicles",
+      "tris": 808,
+      "bytes": 43280,
+      "bounds": [
+        0.69,
+        0.081,
+        0.15
+      ]
+    },
+    {
+      "path": "vehicles/mud_splatter.glb",
+      "group": "vehicles",
+      "tris": 14,
+      "bytes": 1752,
+      "bounds": [
+        0.453,
+        0.414,
+        0.004
+      ]
+    },
+    {
+      "path": "vehicles/panel_dent_a.glb",
+      "group": "vehicles",
+      "tris": 136,
+      "bytes": 4924,
+      "bounds": [
+        0.781,
+        0.622,
+        0.074
+      ]
+    },
+    {
+      "path": "vehicles/panel_dent_b.glb",
+      "group": "vehicles",
+      "tris": 136,
+      "bytes": 4800,
+      "bounds": [
+        0.601,
+        0.541,
+        0.047
+      ]
+    },
+    {
+      "path": "vehicles/panel_dent_c.glb",
+      "group": "vehicles",
+      "tris": 136,
+      "bytes": 4892,
+      "bounds": [
+        0.861,
+        0.442,
+        0.065
+      ]
+    },
+    {
+      "path": "vehicles/plate_uk.glb",
+      "group": "vehicles",
+      "tris": 260,
+      "bytes": 17004,
+      "bounds": [
+        0.53,
+        0.01,
+        0.12
+      ]
+    },
+    {
+      "path": "vehicles/recovery_truck.glb",
+      "group": "vehicles",
+      "tris": 11970,
+      "bytes": 489160,
+      "bounds": [
+        2.45,
+        6.5,
+        2.48
+      ]
+    },
+    {
+      "path": "vehicles/roof_rack.glb",
+      "group": "vehicles",
+      "tris": 488,
+      "bytes": 27392,
+      "bounds": [
+        1.2,
+        0.93,
+        0.122
+      ]
+    },
+    {
+      "path": "vehicles/rust_patch.glb",
+      "group": "vehicles",
+      "tris": 11,
+      "bytes": 1656,
+      "bounds": [
+        0.193,
+        0.217,
+        0.004
+      ]
+    },
+    {
+      "path": "vehicles/seat_sport.glb",
+      "group": "vehicles",
+      "tris": 1468,
+      "bytes": 69976,
+      "bounds": [
+        0.63,
+        0.574,
+        0.845
+      ]
+    },
+    {
+      "path": "vehicles/steering_wheel.glb",
+      "group": "vehicles",
+      "tris": 336,
+      "bytes": 23380,
+      "bounds": [
+        0.37,
+        0.333,
+        0.25
+      ]
+    },
+    {
+      "path": "vehicles/tow_bar.glb",
+      "group": "vehicles",
+      "tris": 232,
+      "bytes": 12484,
+      "bounds": [
+        0.14,
+        0.268,
+        0.056
+      ]
+    },
+    {
+      "path": "vehicles/wheel_recovery.glb",
+      "group": "vehicles",
+      "tris": 1080,
+      "bytes": 74364,
+      "bounds": [
+        0.26,
+        0.806,
+        0.804
+      ]
+    },
+    {
+      "path": "vehicles/wheel_sport.glb",
+      "group": "vehicles",
+      "tris": 1092,
+      "bytes": 76048,
+      "bounds": [
+        0.25,
+        0.66,
+        0.67
+      ]
+    },
+    {
+      "path": "vehicles/wheel_standard.glb",
+      "group": "vehicles",
+      "tris": 1036,
+      "bytes": 70284,
+      "bounds": [
+        0.22,
+        0.632,
+        0.625
+      ]
+    },
+    {
+      "path": "vehicles/wheel_steel.glb",
+      "group": "vehicles",
+      "tris": 928,
+      "bytes": 60472,
+      "bounds": [
+        0.606,
+        0.613,
+        0.35
+      ]
+    },
+    {
+      "path": "vehicles/windscreen_crack.glb",
+      "group": "vehicles",
+      "tris": 308,
+      "bytes": 20488,
+      "bounds": [
+        1.178,
+        0.963,
+        0.015
+      ]
     }
   ]
 }

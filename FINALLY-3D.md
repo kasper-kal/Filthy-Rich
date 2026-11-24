@@ -59,7 +59,7 @@ Rules that never change:
 | 3 | **Decor** | §7 | 78 | `decor/` | 1, 2 | `[x]` |
 | 4 | **Trash** | §8 | 46 | `trash/` | 1 (floors) | `[x]` |
 | 5 | **Cleaning kit** | §9 | 21 | `tools/` | — | `[x]` |
-| 6 | **Vehicles** | §10 | 27 | `vehicles/` | — | `[ ]` |
+| 6 | **Vehicles** | §10 | 29 | `vehicles/` | — | `[x]` |
 | 7 | **Garage** | §11 | 55 | `repair/` | 6 | `[ ]` |
 | 8 | **Exterior** | §12 | 51 | `exterior/`, `vegetation/` | 1 | `[ ]` |
 | 9 | **Grime** | §13 | 19 | `grime/`, `textures/grime/` | 1, 2 | `[ ]` |
@@ -68,7 +68,7 @@ Rules that never change:
 **~419 models across ten phases.** Separately, 22 furniture pieces are already
 shipped (§1.2) and are not part of any phase.
 
-Progress: **5 / 10 phases complete.**
+Progress: **6 / 10 phases complete.**
 
 Smallest useful first step: Phase 1. Biggest visible jump for the least work:
 Phase 1, then 5, then 4. Phases 4, 5 and 6 are independent of everything and can
@@ -180,7 +180,7 @@ look like doors, clothes, dishes, clutter, and a world outside the windows.
 | furniture | `FurnitureManager.ts` | map of id → `/models/furniture/<id>.glb`, cached |
 | trash | `TrashManager.ts` | 31 type names + size/mass table, GLBs since Phase 4 |
 | cleaning tools | `DiegeticHUD.ts` | 4 tools (`spray`, `mop`, `vacuum`, `trash_bag`) as GLBs since Phase 5, placed by a table and anchored to `SOC_*` empties |
-| vehicles | `VehicleVisual.ts` | body built from boxes; wheels built separately in `Vehicle.ts::createWheel()` |
+| vehicles | `VehicleVisual.ts` | one body GLB per preset, cloned and tinted on the `fr_paint` slot; the cabin interior rides inside it; wheels are separate GLBs placed by `Vehicle.ts::createWheel()` from the spec |
 | rooms | `Room.ts` | `createWallsWithOpenings`, `createWallSegment`, `createBaseboards`, `createDoorFrames`, `createWindowFrames`, `createCrownMolding` |
 | world | `HouseGenerator.ts`, `ExteriorGenerator.ts`, `TerrainSystem.ts` | box houses, grass/driveway planes |
 | garage | `RepairBay.ts`, `RecoveryTruck.ts` | procedural |
@@ -1249,12 +1249,60 @@ Folder: `public/models/tools/`
 
 ---
 
-## §10. Phase 6 — vehicles `[ ]`
+## §10. Phase 6 — vehicles `[x]`
 
-**Status:** `[ ]` not started · **Depends on:** nothing · **Done when:** every car body is a model with an interior, the wheels still sit exactly where the spec puts them, and damage overlays attach by name.
+**Status:** `[x]` done 24 Nov 2026 · **Depends on:** nothing · **Done when:** every car body is a model with an interior, the wheels still sit exactly where the spec puts them, and damage overlays attach by name.
 
-`VehicleVisual.ts` builds cars from 8 boxes. You stare at the car constantly, so
-this is the second biggest visual win after the house.
+Until this phase `VehicleVisual.ts` built cars from 8 boxes. You stare at the car
+constantly, so this is the second biggest visual win after the house.
+
+### 10.0 What shipped, and the five decisions worth knowing
+
+**Shipped:** 29 assets in `public/models/vehicles/` — seven bodies, four wheels
+plus a hubcap, seven trim pieces, four interiors, six damage/dirt overlays and a
+`damage_panel_set`. 90,827 triangles, 3.9 MB, about 2% smaller after prune. The
+whole group is inside the 12,000 per-asset budget; the largest piece is the
+recovery truck at 11,970.
+
+**1. The wheels now ride the spec's wheelbase, and that was a bug fix.** The old
+code placed wheels at `length/2 - 0.15`, which put the axles 30 cm inside the
+bumpers — on a 4 m hatchback a real wheel arch would have been wider than the
+body. `VehiclePhysics` and `Vehicle` now both use `wheelbase`, `trackFront` and
+`trackRear`, and every body cuts its arches at exactly those points. The model
+and the physics move together: changing one without the other leaves the wheels
+outside the car, which is why both places carry a comment saying so.
+
+**2. One uniform scale, on wheels only.** A tyre's size *is* the spec, so
+`Vehicle.createWheel()` scales each wheel asset by
+`specs.wheelRadius / nominalRadius`. Every other asset is authored at world size
+(§3.1). The alternative — five sizes of every wheel — would have cost more than
+all seven bodies together.
+
+**3. Panels are named after `PANEL_NAMES`, not §10.1's shorthand.** The game looks
+objects up as `front_left_door`, `front_windshield`, `left_mirror`,
+`radiator_grille` and so on; `door_fl` would have been a silently dead damage
+system. Doors keep hinge-edge pivots through `keep_origin`, so `AN_door_open`
+has an axis to rotate.
+
+**4. Prune is safe here.** Every node in a vehicle is a mesh, so
+`@gltf-transform prune` cannot delete anything the game reads. (The tools group
+is the opposite case; see §9.0.) Prune writes a text `.gltf` if the output path
+does not end in `.glb` — the first attempt destroyed the whole group that way and
+had to be rebuilt, so the loop now writes `*.pruned.glb` and checks the magic
+bytes before replacing anything.
+
+**5. The cabin interior is one size.** `interior_cabin.glb` is authored to the
+hatchback cabin and fitted unscaled to the hatch, sedan, estate and coupe. The
+van, pickup and recovery truck have none yet; their cabins are a different shape
+and would need their own interiors rather than a stretched one.
+
+**Honest deviations from the tables above:** wheels came out at 928–1,092 tris
+rather than 900; `interior_cabin` is 4,152 rather than 2,600; `dashboard` is
+1,184 rather than 620; `light_head_pair` is 1,040 rather than 420. All are inside
+the group budget. The recovery truck has four arches rather than six: `Vehicle`
+places exactly four wheels, and an empty arch looks worse than a missing axle.
+The 27 in §0.2 became 29 because `damage_panel_set` is three dented panels, two
+screens and a bumper.
 
 **Read `src/vehicle/Vehicle.ts::createWheel()` before you build.** Wheels are not
 part of the body: `Vehicle` creates them and positions them from `VehicleSpecs`
@@ -1670,7 +1718,7 @@ tools/blender/
   build_decor.py
   build_trash.py
   build_tools.py       [x] exists (21 assets, sockets, no prune)
-  build_vehicles.py
+  build_vehicles.py    [x] exists (29 assets, named panels, prune safe)
   build_repair.py
   build_exterior.py
   build_vegetation.py
