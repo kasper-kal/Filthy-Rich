@@ -10,6 +10,24 @@ Legend: `[x]` done and shipped · `[ ]` to build · `[~]` exists but needs redoi
 
 ---
 
+**Status on 26 November 2026 — phases 1 to 6 shipped, phases 7 to 10 not started.** Six phases are in
+the repository: the house shell, fixtures and appliances, decor, trash and spills, the cleaning kit,
+and the vehicles. `public/models/models.manifest.json` lists 220 models in six groups —
+architecture 16, decor 79, fixtures 29, tools 21, trash 46, vehicles 29.
+
+Four phases are not built, and the `[ ]` marks in sections 11 to 14 are still correct:
+
+- **Phase 7, garage and repair kit** — `public/models/repair/` does not exist.
+- **Phase 8, exterior, garden and street** — `public/models/exterior/` and `vegetation/` do not exist.
+- **Phase 9, grime, damage and decals** — `public/models/grime/` does not exist, and `filthMix` appears
+  nowhere in `src`, so the material hook section 13.5 plans has not been written.
+- **Phase 10, textures** — partly begun and not finished: `public/textures/` already holds ten families
+  (asphalt, brick wall, carpet, concrete, grass, gravel, corrugated metal, paving slabs, plaster, roof
+  tiles), but the only thing in `src` that references a texture path is `systems/TextureCompression.ts`.
+  The assets are in; the material library that uses them is not.
+
+---
+
 ## §0. How to use this file — and the Phases Of Creation™
 
 The steerer does not write briefs. They type **"Start Phase N"**. That is the
