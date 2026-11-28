@@ -11,6 +11,18 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body, #app { width: 100%; height: 100%; overflow: hidden; background: #0a0a0b; }
+    /*
+      The VibeBrass line: 3px of company jade across the very top of the screen. It is the first
+      thing in the page and it owns its height, so the game sits below it instead of under it. It is
+      the company jade and not one of the game's own colours, because this line is the one mark every
+      VibeBrass surface shares.
+
+      The line is in the page's flow rather than pinned to the window, so on any page that scrolls
+      the first pixel takes it away. This screen does not scroll, so here it simply stays.
+    */
+    body { display: flex; flex-direction: column; }
+    body::before { content: ''; display: block; flex: none; height: 3px; background: #146b52; }
+    #app { height: auto; flex: 1 1 auto; min-height: 0; }
     canvas { display: block; }
   </style>
 </head>
